@@ -1,0 +1,5 @@
+node_modules/
+dist/
+claude-plugin/projects-hub/dist/
+.vscode-test/
+*.vsix

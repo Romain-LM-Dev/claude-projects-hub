@@ -1,0 +1,35 @@
+{
+  "name": "claude-projects-hub",
+  "displayName": "Projects Hub for Claude Code",
+  "description": "Hub de projets et de topics pour Claude Code.",
+  "version": "0.0.1",
+  "publisher": "romain-lm-dev",
+  "private": true,
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {},
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "node esbuild.mjs",
+    "test": "node --test \"src/**/*.test.ts\"",
+    "test:ext": "node test/extension/run.ts",
+    "probe": "node scripts/probe.ts",
+    "package": "vsce package --no-dependencies --skip-license"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/vscode": "~1.100.0",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^4.1.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2"
+  }
+}

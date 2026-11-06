@@ -1,0 +1,7 @@
+**
+!dist/extension.js
+!claude-plugin/**
+!package.json
+!README.md
+!CHANGELOG.md
+claude-plugin/**/node_modules/**
