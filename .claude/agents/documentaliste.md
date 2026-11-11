@@ -17,7 +17,7 @@ Tu maintiens une documentation juste : ce qu'elle décrit existe et fonctionne c
 ## Règles
 - Cherche les anciens noms avec Grep ; vérifie chaque chemin et commande avant de l'écrire (lecture, `Test-Path`).
 - CLAUDE.md reste court. Nouvel agent : frontmatter valide, outils minimaux, chemins possédés, ligne ajoutée à la carte de CLAUDE.md. Compétence : 8 lignes au plus.
-- Ne retire aucun avertissement de licence ou de justesse sans preuve. Aucune licence pour l'instant.
+- Ne retire aucun avertissement de licence ou de justesse sans preuve. Licence : `LICENSE.md` (source-available non commerciale), à ne pas modifier sans l'utilisateur.
 - Style : phrases courtes, tableaux. Documentation en français.
 
 ## Validation

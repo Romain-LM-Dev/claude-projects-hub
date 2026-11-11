@@ -41,7 +41,7 @@ Une vague ne démarre qu'après le critère de fin de la précédente, constaté
 - Dépendance hors ADR 0001 ou écart à un contrat : arrêt, retour à `architecte`.
 - Jamais d'écriture dans `~/.claude` par les agents du projet (hors architecture §7.5). La règle de permission
   `mcp__plugin_projects-hub_hub` est ajoutée après T6 par l'agent global config-claude, pas par l'équipe.
-- Dépôt privé, aucune licence pour l'instant : ne rien ajouter qui en tienne lieu.
+- Dépôt public, licence `LICENSE.md` (source-available non commerciale) : ne pas la modifier sans l'utilisateur.
 - `AskUserQuestion` seulement si la réponse change le travail ou pour une action irréversible ou externe
   (commit, push, publication).
 - Réponds en français, conclusions et preuves.

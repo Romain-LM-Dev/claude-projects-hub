@@ -14,8 +14,8 @@ The interface and command titles are in French; they are quoted as-is below.
 
 ## Project status
 
-Version 0.1.0 (extension and plugin).
-Private repository, no license for now. See [CHANGELOG.md](CHANGELOG.md). Resume point: `docs/reprise.md`.
+Version 0.2.0 (extension and plugin). Non-commercial source-available license ([LICENSE.md](LICENSE.md)).
+See [CHANGELOG.md](CHANGELOG.md). Resume point: `docs/reprise.md`. Français : [README.md](README.md).
 
 ## Features
 
@@ -162,3 +162,8 @@ Code plugin (`projects-hub`) served by a local marketplace.
 - Contracts: [docs/architecture.md](docs/architecture.md)
 - Decisions: [docs/decisions/](docs/decisions/)
 - Execution plan: [docs/plan.md](docs/plan.md)
+
+## License
+
+Non-commercial source-available license: see [LICENSE.md](LICENSE.md). Commercial use requires written permission
+from the rights holder.

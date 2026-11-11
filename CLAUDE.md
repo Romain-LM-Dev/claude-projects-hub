@@ -1,8 +1,8 @@
 # projects-hub (« Projects Hub for Claude Code »)
 
 Extension VS Code (publisher `romain-lm-dev`) et plugin Claude Code : mémoire de topics partagée entre les projets,
-serveur MCP `hub`, hook SessionStart. Dépôt GitHub privé ; **aucune licence pour l'instant** (public plus tard,
-après licence et première version stable). Windows 11, PowerShell 5.1, node 24, TypeScript.
+serveur MCP `hub`, hook SessionStart. Dépôt GitHub public ; licence source-available non commerciale
+(`LICENSE.md`, usage commercial sur autorisation écrite). Windows 11, PowerShell 5.1, node 24, TypeScript.
 
 ## Commandes (depuis la racine, après T0)
 | Commande | Rôle |

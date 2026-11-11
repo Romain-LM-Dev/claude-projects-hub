@@ -4,6 +4,7 @@
   "description": "Hub de projets et de topics pour Claude Code.",
   "version": "0.2.0",
   "publisher": "romain-lm-dev",
+  "license": "SEE LICENSE IN LICENSE.md",
   "private": true,
   "repository": {
     "type": "git",
@@ -290,7 +291,7 @@
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"src/**/*.test.ts\"",
     "test:ext": "node test/extension/run.ts",
     "probe": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/probe.ts",
-    "package": "vsce package --no-dependencies --skip-license"
+    "package": "vsce package --no-dependencies"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

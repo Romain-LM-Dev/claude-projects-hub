@@ -14,7 +14,10 @@
 | Sorties du build | `dist/extension.js`, `claude-plugin/projects-hub/dist/hook.js`, `claude-plugin/projects-hub/dist/mcp.js` |
 
 ## Décisions de l'utilisateur
-- Dépôt GitHub privé ; public après licence et première version stable (aucune licence pour l'instant).
+- Dépôt GitHub rendu public le 2026-11-11 avec la licence source-available non commerciale de l'utilisateur
+  (`LICENSE.md`, identique à celle de ses autres projets Claude). Historique réécrit avant publication (e-mail
+  d'auteur remplacé par l'adresse noreply GitHub, pseudo d'un tiers retiré des exemples) : les identifiants de
+  commits cités dans ce fichier et dans `docs/recette-t11.md` sont antérieurs à la réécriture et ne sont plus valides.
 - Marqueur `.claude/projects-hub.json` non versionné (`.git/info/exclude`), posé par le hook SessionStart dès la première session.
 - Portée mémoire : projet + topics globaux.
 - Publisher `romain-lm-dev`, displayName « Projects Hub for Claude Code ».

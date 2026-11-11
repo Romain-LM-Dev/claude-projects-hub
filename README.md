@@ -12,8 +12,8 @@ projet et entre les projets, que Claude lit et écrit par un serveur MCP `hub` e
 
 ## État du projet
 
-Version 0.1.0 (extension et plugin). Dépôt privé, aucune licence pour l'instant. Voir [CHANGELOG.md](CHANGELOG.md). Point de reprise :
-`docs/reprise.md`.
+Version 0.2.0 (extension et plugin). Licence source-available non commerciale ([LICENSE.md](LICENSE.md)). Voir
+[CHANGELOG.md](CHANGELOG.md). Point de reprise : `docs/reprise.md`. English: [README.en.md](README.en.md).
 
 ## Fonctionnalités
 
@@ -163,3 +163,8 @@ plugin Claude Code (`projects-hub`) servi par une marketplace locale.
 - Contrats : [docs/architecture.md](docs/architecture.md)
 - Décisions : [docs/decisions/](docs/decisions/)
 - Plan d'exécution : [docs/plan.md](docs/plan.md)
+
+## Licence
+
+Licence source-available non commerciale : voir [LICENSE.md](LICENSE.md). Usage commercial sur autorisation écrite
+du titulaire.

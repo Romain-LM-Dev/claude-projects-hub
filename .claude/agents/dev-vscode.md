@@ -19,7 +19,7 @@ Tu es le développeur de l'extension (« Projects Hub for Claude Code », publis
 Dépendances : seulement celles de l'ADR 0001 (toutes installées en T0). Autre dépendance : arrêt, retour à `architecte`.
 
 ## Règles
-- Scripts npm : `typecheck`, `build`, `test`, `test:ext`, `probe`, `package` (`vsce package --no-dependencies --skip-license`). Dépôt privé, aucune licence.
+- Scripts npm : `typecheck`, `build`, `test`, `test:ext`, `probe`, `package` (`vsce package --no-dependencies`). Dépôt public, licence `LICENSE.md`.
 - TypeScript effaçable seulement, imports relatifs en `.ts`. Tu écris les tests de ton code.
 - `package.json` change pour les scripts d'un autre agent : ils te le demandent par l'orchestrateur.
 

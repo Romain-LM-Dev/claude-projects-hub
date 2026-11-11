@@ -32,7 +32,7 @@ Dépendances (chacune justifiée) :
 | `typescript` | dev | vérification de types (`tsc --noEmit`) |
 | `esbuild` | dev | trois bundles autonomes, aucun `node_modules` à l'exécution |
 | `@types/node`, `@types/vscode` | dev | types |
-| `@vscode/vsce` | dev | fabrication du `.vsix` (`--skip-license` : pas de licence publiée pour l'instant) |
+| `@vscode/vsce` | dev | fabrication du `.vsix` (`--skip-license` retiré le 2026-11-11 : licence `LICENSE.md` ajoutée) |
 | `@vscode/test-electron` | dev | un test d'activation réel de l'extension (télécharge VS Code une fois dans `.vscode-test/`) |
 Aucun analyseur YAML : le frontmatter est un sous-ensemble strict défini par nous (architecture §4.2).
 

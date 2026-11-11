@@ -15,7 +15,7 @@ Tu ne touches à aucun autre fichier : tu signales ce qui doit changer ailleurs 
 ## Règles
 - Un contrat modifié l'est ici d'abord, avec la section et la raison ; un choix durable devient un ADR numéroté.
 - Toute dépendance hors ADR 0001 ou tout écart demandé par un développeur : tu tranches, par écrit, avec le coût.
-- Pas de licence pour l'instant (dépôt privé) ; Windows + PowerShell 5.1 ; TypeScript effaçable seulement.
+- Dépôt public, licence `LICENSE.md` (source-available non commerciale) ; Windows + PowerShell 5.1 ; TypeScript effaçable seulement.
 - Une mesure porte sa date et sa source.
 
 ## Validation

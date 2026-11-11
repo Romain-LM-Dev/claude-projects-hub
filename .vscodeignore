@@ -4,4 +4,5 @@
 !package.json
 !README.md
 !CHANGELOG.md
+!LICENSE.md
 claude-plugin/**/node_modules/**
