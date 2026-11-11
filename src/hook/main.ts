@@ -1,10 +1,7 @@
 import { appendFileSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ensureProject, resolveProject } from '../core/identity.ts';
 import { hubHome } from '../core/paths.ts';
-import { readRegistry } from '../core/registry.ts';
-import { listTopics } from '../core/store.ts';
-import { HOOK_BUDGET, PROJECT_NONE, PROJECT_UNREGISTERED, buildHeader, buildInjection, projectLabel } from './injection.ts';
+import { injectionFor } from './context.ts';
 
 const LOG_MAX = 1_000_000;
 
@@ -39,27 +36,7 @@ async function main() {
     const dir = process.env.CLAUDE_PROJECT_DIR || (typeof cwd === 'string' && cwd ? cwd : '');
     if (!dir) return;
 
-    let id: string | undefined;
-    let excluded = false;
-    try {
-      const p = await ensureProject(dir, { hubHome: hub, git: false, log, lockTimeoutMs: 500 });
-      if (p) id = p.id; else excluded = true;
-    } catch (e) {
-      log(`ensureProject: ${(e as Error).message}`);
-      try {
-        const r = await resolveProject(dir, { hubHome: hub });
-        if (r.status === 'resolved') id = r.id; else excluded = r.status === 'excluded';
-      } catch (e2) { log(`resolveProject: ${(e2 as Error).message}`); }
-    }
-
-    let project = excluded ? PROJECT_NONE : PROJECT_UNREGISTERED;
-    if (id) {
-      let name = id;
-      try { name = (await readRegistry(hub)).reg.projects[id]?.name ?? id; } catch (e) { log(`registre: ${(e as Error).message}`); }
-      project = projectLabel(name);
-    }
-    const valid = (await listTopics({ hubHome: hub, projectId: id }, 'all')).flatMap((t) => (t.valid ? [t] : []));
-    const text = buildInjection(buildHeader(project), valid.filter((t) => t.ref.startsWith('project:')), valid.filter((t) => t.ref.startsWith('global:')), HOOK_BUDGET);
+    const text = await injectionFor(dir, { hubHome: hub, ensure: true, log });
     process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: text } }));
   } catch (e) {
     log(`hook: ${(e as Error).message}`);
