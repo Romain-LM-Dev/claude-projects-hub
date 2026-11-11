@@ -1,0 +1,6 @@
+{
+  "name": "projects-hub",
+  "version": "0.1.0",
+  "author": { "name": "romain-lm-dev" },
+  "description": "Mémoire de topics partagée entre les projets : index injecté au démarrage de session et serveur MCP hub."
+}

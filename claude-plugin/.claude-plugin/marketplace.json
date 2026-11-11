@@ -1,0 +1,8 @@
+{
+  "name": "projects-hub-local",
+  "description": "Marketplace locale de projects-hub : mémoire de topics partagée entre les projets.",
+  "owner": { "name": "romain-lm-dev" },
+  "plugins": [
+    { "name": "projects-hub", "source": "./projects-hub", "description": "Mémoire de topics partagée entre les projets (hook SessionStart et serveur MCP hub)." }
+  ]
+}
