@@ -14,7 +14,7 @@ The interface and command titles are in French; they are quoted as-is below.
 
 ## Project status
 
-Plugin version 0.1.0 (`claude-plugin/projects-hub/.claude-plugin/plugin.json`); `package.json` still says `0.0.1`.
+Version 0.1.0 (extension and plugin).
 Private repository, no license for now. See [CHANGELOG.md](CHANGELOG.md). Resume point: `docs/reprise.md`.
 
 ## Features

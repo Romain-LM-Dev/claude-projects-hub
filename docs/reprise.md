@@ -69,6 +69,30 @@ l'utilisateur : installation réelle (`code --install-extension`, recharger, « 
 Claude », `claude plugin list --json`), question « Quels topics de mémoire partagée vois-tu ? » dans une nouvelle
 session, `claude --resume` d'une session orpheline rattachée ; message réel de `claude` pour « déjà installé » à
 relever (supposé contenir « already »).
+T10 fait et commité (`658b65e`) : README FR/EN, CHANGELOG 0.1.0 ; 18 commandes citées dans les deux README (contrôle
+relancé par l'orchestrateur : 0 manquant). Écart connu : `package.json` 0.0.1, plugin 0.1.0.
+Installation réelle, étape 1 faite le 2026-11-11 avec l'accord de l'utilisateur : `code --install-extension` ->
+code 0, `romain-lm-dev.claude-projects-hub@0.0.1` listée (`.vsix` 160,7 Ko, 12 fichiers). Étape 2 (utilisateur) :
+recharger la fenêtre, « Claude Hub: Installer l'intégration Claude » ; puis contrôle `claude plugin list --json`.
+Étape 2 faite par l'utilisateur ; vérifié par l'orchestrateur : `projects-hub@projects-hub-local` 0.1.0, `enabled`,
+`readFromFolder` = `~/.claude-projects-hub/marketplace/projects-hub`. Session réelle `claude -p` dans ce dépôt :
+Claude cite le projet « claude-projects-hub » et 0 topic ; marqueur posé, ligne dans `.git/info/exclude`,
+`git status` sans le marqueur, entrée au registre réel, `hook.log` vide. Reste : la même question dans le panneau
+Claude de VS Code (utilisateur), `claude --resume` d'une session orpheline rattachée (T11).
+
+## Vague 7 : T11 (2026-11-11)
+qa-reviewer (sonnet) : commandes, tests du point p (`src/extension/relocation.test.ts`), scénario réel A/B/resume
+(`docs/recette-t11.md`). Second relecteur (opus, lecture seule) : 9 défauts, aucun en traversée, injection ou secrets.
+Corrigés (contrat §7.3, §7.4, §14 « T11 ») : Annuler d'un passage à plusieurs fusions (`undoMerge(hub, records[])`),
+orphelin doublon, chemin complet des notes d'auto-mémoire, Détacher refusé hors racine, fusion défaite si un
+déplacement échoue, verrou sur le topic cible, `info/exclude` seulement si `G/HEAD` existe, marqueur d'un parent
+seulement dans un dépôt git, secrets de `importedFrom` ; extension : vue robuste à un registre illisible, id de
+reprise = UUID, un seul Annuler ; verrou : EPERM/EACCES de Windows attendus comme EEXIST, délai toujours appliqué.
+Preuves : nouveaux tests rouges sur `658b65e`, verts après ; `npm test` 97/97 deux fois ; typecheck, build,
+`test:ext` code 0. `package.json` passe en 0.1.0 (la marketplace n'est recopiée qu'à un changement de version).
+Limite acceptée : projet enregistré par le hook puis déplacé sans marqueur avant tout scan -> « Orphelins ».
+Hub réel : 2 entrées laissées par la QA (`repoA-renamed`, `repoB`) et 3 dossiers de transcripts `*projects-hub-qa*`
+dans `~/.claude/projects`, à purger avec l'accord de l'utilisateur.
 
 Énoncé d'origine :
 `.vsix` < 3 Mo (`.vscodeignore`, point n), commande « Installer l'intégration Claude » (copie vers

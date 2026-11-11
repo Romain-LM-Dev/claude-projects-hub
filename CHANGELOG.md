@@ -2,7 +2,7 @@
 
 ## 0.1.0 - 2026-11-11
 
-Première version fonctionnelle (version du plugin ; `package.json` porte encore `0.0.1`).
+Première version fonctionnelle (extension et plugin), après la revue finale T11 (`docs/recette-t11.md`).
 
 ### Ajouté
 - Serveur MCP `hub` : `memory_list`, `memory_read`, `memory_write`, `memory_append`.

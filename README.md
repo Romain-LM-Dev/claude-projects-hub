@@ -12,8 +12,7 @@ projet et entre les projets, que Claude lit et écrit par un serveur MCP `hub` e
 
 ## État du projet
 
-Version 0.1.0 du plugin (`claude-plugin/projects-hub/.claude-plugin/plugin.json`) ; `package.json` porte encore
-`0.0.1`. Dépôt privé, aucune licence pour l'instant. Voir [CHANGELOG.md](CHANGELOG.md). Point de reprise :
+Version 0.1.0 (extension et plugin). Dépôt privé, aucune licence pour l'instant. Voir [CHANGELOG.md](CHANGELOG.md). Point de reprise :
 `docs/reprise.md`.
 
 ## Fonctionnalités
