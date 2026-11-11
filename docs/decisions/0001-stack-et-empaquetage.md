@@ -42,3 +42,14 @@ Aucun analyseur YAML : le frontmatter est un sous-ensemble strict défini par no
   redémarrage.
 - Le préfixe des outils MCP (`mcp__plugin_projects-hub_hub__`) est à confirmer sur une vraie session (étape T6).
 - `engines.vscode` : `^1.100.0`.
+
+## Amendement du 2026-11-11
+- Versions : cet ADR choisit les paquets, pas leurs versions ; `package.json` et `package-lock.json` les fixent.
+  `typescript ^7.0.2` et `@types/node ^26.6.6` (posés en T0) sont entérinés. Les types de Node 26 ne protègent pas
+  le minimum d'exécution (Node ≥ 20, cible esbuild `node20`) : `src/core`, `src/hook` et `src/mcp` n'emploient
+  aucune API Node postérieure à Node 20 ; contrôle par relecture (qa-reviewer, T11).
+- Type de module : pas de `"type": "module"` dans `package.json` (les trois bundles restent en CJS `.js`, chemins
+  §2, §6.1, §9 inchangés) ; l'avertissement `MODULE_TYPELESS_PACKAGE_JSON` est neutralisé par
+  `--disable-warning=MODULE_TYPELESS_PACKAGE_JSON` dans les scripts `test` et `probe`. Rejeté : bundles en `.cjs`
+  avec `"type": "module"` (renomme trois sorties et leurs références dans le plugin, l'extension et les docs, pour
+  un simple avertissement) ; accepter l'avertissement (bruit à chaque test).

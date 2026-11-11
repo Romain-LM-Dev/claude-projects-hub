@@ -63,7 +63,8 @@ ne le porte donc pas et reçoit sa propre identité ; une copie du dossier (avec
 - `ref` = `project:<slug>` ou `global:<slug>`.
 - `slug` : `^[a-z0-9]+(-[a-z0-9]+)*$`, 64 caractères max ; refusés : `con prn aux nul com1-9 lpt1-9` (Windows).
 - Fichier : `HUB_HOME/global/topics/<slug>.md` ou `HUB_HOME/projects/<projectId>/topics/<slug>.md`.
-- `project:` se résout avec le projet de la session (§7.3).
+- `project:` se résout avec le projet de la session (§7.3). Le magasin reçoit l'id déjà résolu ; une ref `project:`
+  sans id valide y lève `invalid_input` (erreur d'appel : le MCP traite avant « exclu » et « non enregistré », §5).
 
 ### 4.2 Format
 ```markdown
@@ -106,12 +107,19 @@ MCP de plugin), sinon `process.cwd()`. Résultats : contenu texte ; erreurs : `i
 `ERREUR <code> : <message>`. Codes : `invalid_ref`, `invalid_input`, `not_found`, `exists`, `conflict`,
 `too_large`, `secret_detected`, `invalid_file`, `io`, `excluded` (ref `project:` depuis un dossier exclu, §7.3).
 
+Résolution (révisé le 2026-11-11, point e) : le serveur appelle `resolveProject` avant toute ref `project:` (et
+pour l'en-tête de `memory_list`). `excluded` n'est jamais levé par le noyau : le serveur le produit d'après
+`resolveProject` (`status: 'excluded'`) ou `ensureProject` (`null`). Non enregistré : `memory_read` et
+`memory_append` → `not_found` ; `memory_write` → `ensureProject(dir, { git: true })` puis écriture. Résolution en
+échec (registre illisible `invalid_file`, verrou `io`) : code rendu pour une ref `project:` ; `memory_list` affiche
+alors `Projet : non enregistré` et les seuls topics globaux ; les refs `global:` ne dépendent jamais de la résolution.
+
 | Outil | Entrée | Sortie | Règles |
 |---|---|---|---|
-| `memory_list` | `scope?`: `project`\|`global`\|`all` (défaut `all`) ; `query?`: chaîne (sous-chaîne, sans casse, sur titre, résumé, tags) ; `tag?`: slug | 1re ligne `Projet : <nom> (<id>)` ou `Projet : non enregistré`, puis une ligne par topic au format de l'index (§6.3), 200 max, tri `mtime` décroissant | lecture seule |
-| `memory_read` | `ref` | `ref:`, `title:`, `summary:`, `tags:`, `updated:` (ISO), `revision:`, ligne `---`, puis le corps brut | lecture seule |
-| `memory_write` | `ref`, `title`, `summary`, `body`, `tags?`, `baseRevision?` | `ref:`, `revision:`, `created: true\|false` | absent + pas de `baseRevision` = création ; présent = `baseRevision` obligatoire (`exists` sinon) et égale à la révision courante (`conflict` + révision courante sinon). Topic projet dans un projet non enregistré (hook en échec) : `ensureProject` d'abord (§7.3) ; dossier exclu : `excluded` |
-| `memory_append` | `ref`, `text` | `ref:`, `revision:` | topic existant (`not_found` sinon) ; ajoute `\n\n### <date ISO UTC à la minute>\n<text>` sous verrou, sans conflit possible ; `too_large` au-delà de 50 000 car. |
+| `memory_list` | `scope?`: `project`\|`global`\|`all` (défaut `all`) ; `query?`: chaîne (sous-chaîne, sans casse, sur titre, résumé, tags) ; `tag?`: slug | 1re ligne `Projet : <nom> (<id>)` ou `Projet : non enregistré`, puis une ligne par topic au format de l'index (§6.3), 200 max, tri `mtime` décroissant | lecture seule ; projet exclu ou non enregistré : aucun topic projet, jamais d'erreur (`scope: project` compris) |
+| `memory_read` | `ref` | `ref:`, `title:`, `summary:`, `tags: [a, b]`, `updated:` (ISO), `revision:`, ligne `---`, puis le corps brut | lecture seule |
+| `memory_write` | `ref`, `title`, `summary`, `body`, `tags?`, `baseRevision?` | `ref:`, `revision:`, `created: true\|false` | absent + pas de `baseRevision` = création ; présent = `baseRevision` obligatoire (`exists` sinon) et égale à la révision courante (`conflict` + révision courante sinon) ; `baseRevision` sur un topic absent → `not_found`. Topic projet dans un projet non enregistré (hook en échec) : `ensureProject` d'abord (§7.3) ; dossier exclu : `excluded` |
+| `memory_append` | `ref`, `text` | `ref:`, `revision:` | topic existant (`not_found` sinon) ; ajoute `\n\n### <AAAA-MM-JJTHH:MMZ, UTC>\n<text>` (ex. `### 2026-11-11T09:42Z`) sous verrou, sans conflit possible ; texte vide → `invalid_input` ; `too_large` au-delà de 50 000 car. |
 
 Pas d'outil de suppression en v1 (l'utilisateur supprime depuis la vue, vers la corbeille).
 
@@ -162,7 +170,7 @@ Topics partagés entre sessions. Projet : «G_mix-Generateur-Business_Games». L
 - En-tête toujours présent (≈ 450 car.), même sans topic, pour que Claude sache que les outils existent.
   Projet non enregistré (création en échec) : `Projet : non enregistré (le premier topic project: le crée)` ;
   dossier exclu : `Projet : aucun (dossier temporaire ou personnel, topics global: seulement)`.
-- Ligne : `- <ref> — <title> : <summary> [<tags>] (<AAAA-MM-JJ de mtime>)`, coupée à 180 car. avec `…`.
+- Ligne : `- <ref> — <title> : <summary> [<tags>] (<AAAA-MM-JJ de mtime, date locale>)`, coupée à 180 car. avec `…`.
 - Ordre : topics du projet puis globaux, chacun par `mtime` décroissant ; on ajoute des lignes tant que
   en-tête + lignes + pied de page ≤ budget ; pied de page `… N autres topics : memory_list` si N > 0.
 - Section vide omise. L'auto-mémoire Claude n'est jamais injectée (Claude la charge déjà).
@@ -189,7 +197,9 @@ Topics partagés entre sessions. Projet : «G_mix-Generateur-Business_Games». L
 }
 ```
 - `id` : `crypto.randomUUID()`. `paths` : dossiers vivants (plusieurs = clones ou worktrees). `git` : `null` si
-  pas de dépôt ou git absent ; clé absente = empreinte pas encore calculée (entrée créée par le hook). `dismissed` : ids de candidats refusés par l'utilisateur.
+  pas de dépôt ou git absent ; clé absente = empreinte pas encore calculée (entrée créée par le hook). `dismissed` : ids de candidats refusés par l'utilisateur ; l'id du projet lui-même dans
+  son propre `dismissed` = orphelin ignoré (« Ignorer l'orphelin » : ni candidats, ni nœud « Orphelins » ; reste
+  rattachable par « Rattacher à un projet… » ; pas de commande pour lever l'ignorance en v1).
 - Clé de comparaison d'un chemin : `path.resolve`, sans séparateur final, en minuscules sous Windows.
 
 ### 7.2 Empreinte git (extension et MCP seulement, jamais le hook)
@@ -211,7 +221,9 @@ Un dossier exclu n'a jamais de marqueur ni d'entrée : seul le global est inject
 
 `ensureProject(dir, { git })`, fonction du noyau appelée par le hook à chaque session (`git: false`) et par le MCP
 avant une écriture `project:` quand le projet n'est pas enregistré (`git: true`) ; ne fait rien si `dir` est exclu :
-- Racine R = dernier dossier visité par l'étape 1 s'il contient `.git` et n'est pas exclu, sinon `dir`.
+- Racine R = dossier où l'étape 1 a trouvé le marqueur ; sinon dernier dossier visité par l'étape 1 s'il contient
+  `.git` et n'est pas exclu ; sinon `dir` (révisé le 2026-11-11 : un sous-dossier d'un projet marqué sans git
+  n'entre pas dans `paths`).
 - Sous le verrou de `registry.json` (§4.3 ; attente limitée à 500 ms pour le hook) : relire le registre ; id =
   marqueur trouvé, sinon projet dont `paths` contient R, sinon `crypto.randomUUID()` (`name` = nom de R, `git` absent
   pour le hook, calculé pour le MCP).
@@ -225,6 +237,9 @@ avant une écriture `project:` quand le projet n'est pas enregistré (`git: true
   espaces ni `\r`, ne lui est égale ; saut de ligne ajouté avant si le fichier ne finit pas par `\n`. Échec :
   journalisé, on continue.
 - Rien d'autre n'est écrit dans le projet ; aucun `.gitignore` n'est créé ni modifié.
+- `ensureProject` ne retire jamais un chemin disparu (seul le scan le déplace vers `formerPaths`, §7.4). Conséquence
+  acceptée : avant le scan suivant, un nouveau dossier créé à l'ancien chemin d'un projet reçoit son identité
+  (étape 2), comme une copie.
 
 ### 7.4 Rapprochement au scan (extension)
 Pour chaque dossier projet vivant P (cwd des transcripts qui existe, hors dossier exclu §7.3) :
@@ -234,6 +249,10 @@ Pour chaque dossier projet vivant P (cwd des transcripts qui existe, hors dossie
 3. Sinon nouvelle entrée sans marqueur (le scan n'écrit jamais dans un projet ; le marqueur viendra à la
    prochaine session), empreinte calculée.
 Puis empreinte calculée pour toute entrée à chemin vivant sans clé `git` (§7.2).
+P est le cwd tel quel (pas la racine R du §7.3) : une session ouverte dans un sous-dossier d'un projet marqué ajoute
+ce sous-dossier à `paths` (même id, sans effet sur la résolution). Aucun processus git sous le verrou du registre
+(révisé le 2026-11-11) : les empreintes des cwd et des chemins vivants des entrées sans clé `git` sont calculées
+avant la prise du verrou ; une entrée apparue entre-temps (hook) garde sa clé `git` absente jusqu'au scan suivant.
 Chaque dossier `CLAUDE_HOME/projects/<dir>` est rattaché (`claudeDirs`) au projet de son cwd ; un dossier dont le
 cwd n'existe plus et qu'aucun projet ne porte devient une entrée orpheline (`paths` vide, `git` null,
 `formerPaths` = son cwd). Chemins disparus : déplacés de `paths` vers `formerPaths`. Projet sans chemin vivant =
@@ -244,7 +263,11 @@ Pour chaque orphelin O (non ignoré), candidats C = projets vivants, hors `O.dis
   absents), C sans topic, et un seul C dans ce cas. → fusion automatique : copie de sauvegarde
   `registry.json.bak`, `O.paths += C.paths`, `O.claudeDirs += C.claudeDirs`, C supprimé, marqueur de C réécrit avec
   l'id de O s'il existe ; notification « Projet X rattaché à son nouveau dossier » avec bouton Annuler (restaure le
-  `.bak` et le marqueur).
+  `.bak` et le marqueur). Un seul `.bak` par passage, pris avant sa première fusion : une seule notification par
+  passage (noms des projets rattachés) ; Annuler défait toutes les fusions du passage (`undoMerge` sur chaque
+  enregistrement, ordre inverse). `MergeRecord.backupRevision` = révision (§4.2) du `.bak` écrit ; `undoMerge` refuse
+  (`conflict`) si le `.bak` a changé depuis (fusion ou rattachement plus récent). Les entrées créées entre la fusion et
+  l'annulation sont perdues du registre et recréées par le marqueur à la session ou au scan suivants.
 - **Probable** : `rootCommits` qui se recoupent sans le reste, ou même nom de dossier (sans casse). → proposé
   (nœud « À rattacher » et notification) : Rattacher / Ignorer ce candidat / Ignorer l'orphelin.
 - Sinon : affiché dans « Orphelins » avec la commande manuelle « Rattacher à un projet… ».
@@ -271,7 +294,10 @@ un ; les topics restent au projet d'origine.
   copie des `.md` absents de la cible, ajout à `MEMORY.md` des lignes d'index absentes ; jamais d'écrasement ni de
   suppression. Dossier cible = nom encodé du nouveau chemin (tout caractère non alphanumérique → `-`) ; refus si le
   nom dépasse 200 caractères (hash non reproductible) ou si `autoMemoryDirectory` est réglé : message « ouvrez
-  d'abord une session Claude dans le nouveau dossier ».
+  d'abord une session Claude dans le nouveau dossier ». `autoMemoryDirectory` n'est lu que dans
+  `CLAUDE_HOME/settings.json` (réglage utilisateur) ; un réglage local ou d'entreprise n'est pas vu, la copie va alors
+  dans le dossier standard, inutilisée mais sans perte (limite acceptée le 2026-11-11). Casse du lecteur (`C-`/`c-`)
+  non traitée : NTFS ne distingue pas la casse, un dossier Claude existant est donc réutilisé.
 
 ## 8. Lecture des données Claude
 
@@ -291,6 +317,8 @@ un ; les topics restent au projet d'origine.
 - Tête : blocs de 64 Kio jusqu'à obtenir `cwd` et `sessionId` (4 Mio max) : `cwd`, `gitBranch`, `version`,
   `entrypoint`, `startedAt` (1er `timestamp`), premier message `user` en texte qui ne commence pas par `<`
   (120 car.).
+- Titre personnalisé (`/rename`) : ligne `{"type":"custom-title","customTitle":…,"sessionId":…}` (observée le
+  2026-11-11, `npm run probe`).
 - Queue : 256 Kio de fin (1re ligne partielle ignorée) : dernier `custom-title`/`ai-title`/`last-prompt`, dernier
   `cost-state.totalCostUSD`, dernier `timestamp` = `endedAt`. Titre : custom > ai > last-prompt > first-prompt.
 - Jamais de lecture complète pour la liste. Ligne non JSON ou type inconnu : comptés, ignorés. Lignes `isSidechain`
@@ -352,8 +380,12 @@ toutes les 2 s.
 ## 11. Budgets (mesurés par l'étape indiquée)
 | Mesure | Cible | Étape |
 |---|---|---|
-| Scan à froid du poste (13 projets, 38 sessions, 540 Mo) | < 2 s, < 20 Mo lus | T2 (`npm run probe`) |
+| Scan à froid du poste | < 2 s ; octets lus / sessions ≤ 320 Kio (tête 64 Kio + queue 256 Kio ; une tête prolongée, 4 Mio max, est admise si la moyenne tient) | T2 (`npm run probe`) |
 | Scan avec cache | < 300 ms | T2 |
+
+Mesure du 2026-11-11 (`npm run probe`, poste de référence) : 13 projets, 72 sessions, 18,80 Mo lus (≈ 0,26 Mo par
+session), froid 487 ms, cache 18 ms. L'ancienne cible « < 20 Mo lus » valait pour 38 sessions ; elle est remplacée
+par la cible par session (point g).
 | Hook SessionStart | < 150 ms (hors démarrage de Node) | T4 |
 | Texte injecté | ≤ 4 000 caractères | T4 |
 | Page de document de session (84 Mo) | < 2 s | T7 |
@@ -374,3 +406,18 @@ recherche plein texte dans les transcripts ; tableau de bord en webview ; archiv
 purge par Claude Code (`cleanupPeriodDays`) ; déplacement des transcripts orphelins ; repli sur l'Agent SDK si le
 format JSONL casse ; synchronisation de la mémoire entre postes ; Node fourni par VS Code (`ELECTRON_RUN_AS_NODE`)
 quand Node manque ; règle de permission posée par l'extension ; CI GitHub Actions ; publication sur la Marketplace.
+
+## 14. Révisions
+| Date | Point | Sections | Décision |
+|---|---|---|---|
+| 2026-11-11 | e | §4.1, §5 | comportements de T1 entérinés (`invalid_input` sans id, `not_found` sur `baseRevision` d'un topic absent, date `AAAA-MM-JJTHH:MMZ`) ; résolution côté MCP précisée |
+| 2026-11-11 | f | §8.2 | forme du titre personnalisé inscrite |
+| 2026-11-11 | g | §11 | budget de lecture par session |
+| 2026-11-11 | j1 | §7.1 | orphelin ignoré = son id dans son propre `dismissed` |
+| 2026-11-11 | j2 | §7.3 | racine = dossier du marqueur trouvé |
+| 2026-11-11 | j3 | §7.3, §7.4 | chemin disparu retiré par le scan seul ; P = cwd au scan |
+| 2026-11-11 | j4 | §7.4 | un `.bak` par passage, Annuler par passage, refus si `.bak` réécrit (code à changer) |
+| 2026-11-11 | j5 | §7.5 | limites de `copyAutoMemory` acceptées |
+| 2026-11-11 | j6 | §7.4 | aucun git sous le verrou du registre (code à changer) |
+| 2026-11-11 | a, b, h | ADR 0005, ADR 0001 | amendements datés |
+| 2026-11-11 | k, l, m | §5, §6.3 | date locale dans les lignes d'index ; `excluded` dans le type des codes ; format `tags: [a, b]` de `memory_read` ; `writeTopic` accepte `importedFrom` (import d'auto-mémoire) |

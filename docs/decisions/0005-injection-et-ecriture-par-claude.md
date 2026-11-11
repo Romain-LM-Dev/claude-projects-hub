@@ -29,6 +29,8 @@ Option 2, contrats dans architecture §5 et §6 :
 - Coût fixe ≈ 450 caractères par session sans topic, 4 000 au plus.
 - Les sous-agents ne reçoivent pas l'index (SubagentStart reporté, à évaluer après mesure du coût) ; ils peuvent
   appeler les outils si leurs permissions le permettent.
-- Chaque appel d'outil demande une permission tant que la règle `mcp__plugin_projects-hub_hub` n'est pas ajoutée
-  par l'utilisateur.
+- Chaque appel d'outil demande une permission tant que la règle `mcp__plugin_projects-hub_hub` (préfixe relevé en
+  T6) n'est pas dans `permissions.allow` de `~/.claude/settings.json` : sur ce poste, ajoutée après T6 par l'agent
+  global de configuration (config-claude) ; ailleurs, par l'utilisateur (README) ; jamais par l'extension ni par
+  l'équipe du projet (amendement du 2026-11-11, aligné sur architecture §9).
 - La qualité de ce que Claude écrit dépend des consignes ; à juger sur sessions réelles (essai T6, puis usage).
