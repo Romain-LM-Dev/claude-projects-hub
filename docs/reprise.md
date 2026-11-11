@@ -91,8 +91,16 @@ reprise = UUID, un seul Annuler ; verrou : EPERM/EACCES de Windows attendus comm
 Preuves : nouveaux tests rouges sur `658b65e`, verts après ; `npm test` 97/97 deux fois ; typecheck, build,
 `test:ext` code 0. `package.json` passe en 0.1.0 (la marketplace n'est recopiée qu'à un changement de version).
 Limite acceptée : projet enregistré par le hook puis déplacé sans marqueur avant tout scan -> « Orphelins ».
-Hub réel : 2 entrées laissées par la QA (`repoA-renamed`, `repoB`) et 3 dossiers de transcripts `*projects-hub-qa*`
-dans `~/.claude/projects`, à purger avec l'accord de l'utilisateur.
+Hub réel nettoyé avec l'accord de l'utilisateur : 2 entrées QA retirées du registre sous verrou (sauvegarde
+`registry.json.before-qa-cleanup`), 3 dossiers `*projects-hub-qa*` mis à la corbeille.
+
+## État final (2026-11-11)
+v1 terminée (T0 à T11), fusionnée en avance rapide dans `main` et poussée (`fd7879a`, branche `feat/noyau` aussi).
+Extension 0.1.0 installée sur le poste ; la marketplace `~/.claude-projects-hub/marketplace` n'est recopiée
+qu'après rechargement de la fenêtre VS Code (nouvelle version activée) : vérifier ensuite que `dist/hook.js` y est
+identique au build. Reste côté utilisateur : question « Quels topics de mémoire partagée vois-tu ? » dans le panneau
+Claude de VS Code ; secrets Supabase en clair dans `permissions.allow` de `~/.claude/settings.json` (hors projet).
+Limite connue : un projet enregistré par le hook puis déplacé sans marqueur avant tout scan reste dans « Orphelins ».
 
 Énoncé d'origine :
 `.vsix` < 3 Mo (`.vscodeignore`, point n), commande « Installer l'intégration Claude » (copie vers
