@@ -96,10 +96,14 @@ Hub réel nettoyé avec l'accord de l'utilisateur : 2 entrées QA retirées du r
 
 ## État final (2026-11-11)
 v1 terminée (T0 à T11), fusionnée en avance rapide dans `main` et poussée (`fd7879a`, branche `feat/noyau` aussi).
-Extension 0.1.0 installée sur le poste ; la marketplace `~/.claude-projects-hub/marketplace` n'est recopiée
-qu'après rechargement de la fenêtre VS Code (nouvelle version activée) : vérifier ensuite que `dist/hook.js` y est
-identique au build. Reste côté utilisateur : question « Quels topics de mémoire partagée vois-tu ? » dans le panneau
-Claude de VS Code ; secrets Supabase en clair dans `permissions.allow` de `~/.claude/settings.json` (hors projet).
+Extension 0.1.0 installée ; marketplace `~/.claude-projects-hub/marketplace` recopiée depuis l'extension 0.1.0
+installée (6 fichiers identiques, `hook.js` = build). Vérifié par une vraie session `claude -p` dans un dossier
+neutre : hook injecté, `mcp__plugin_projects-hub_hub__memory_list` appelé sans demande de permission, réponse
+correcte. Dans CE dépôt, la session démarre en agent `orchestrateur` (`.claude/settings.json`) dont la liste
+d'outils n'inclut pas les outils MCP : Claude y voit l'index mais ne peut pas appeler `memory_*` (ajouter
+`mcp__plugin_projects-hub_hub__memory_list`/`memory_read` à `.claude/agents/orchestrateur.md` si voulu :
+documentaliste). « Secrets Supabase » signalés par config-claude : fausse alerte, aucun secret trouvé dans
+`~/.claude/settings.json` (les chaînes `psql postgresql://user@hôte` n'ont pas de mot de passe).
 Limite connue : un projet enregistré par le hook puis déplacé sans marqueur avant tout scan reste dans « Orphelins ».
 
 Énoncé d'origine :
