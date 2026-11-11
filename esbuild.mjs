@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 
 const entries = [
   { in: "src/extension/extension.ts", out: "dist/extension.js", external: ["vscode"] },
+  { in: "test/extension/suite.ts", out: "dist/test-suite.js", external: ["vscode"] },
   { in: "src/hook/main.ts", out: "claude-plugin/projects-hub/dist/hook.js" },
   { in: "src/mcp/main.ts", out: "claude-plugin/projects-hub/dist/mcp.js" },
 ];

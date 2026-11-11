@@ -12,13 +12,140 @@
   "activationEvents": [
     "onStartupFinished"
   ],
-  "contributes": {},
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "claudeHub",
+          "title": "Claude Hub",
+          "icon": "$(library)"
+        }
+      ]
+    },
+    "views": {
+      "claudeHub": [
+        {
+          "id": "claudeProjectsHub.projects",
+          "name": "Projets"
+        },
+        {
+          "id": "claudeProjectsHub.globalMemory",
+          "name": "Mémoire globale"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "claudeProjectsHub.refresh",
+        "title": "Rafraîchir",
+        "category": "Claude Hub",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "claudeProjectsHub.newTopic",
+        "title": "Nouveau topic",
+        "category": "Claude Hub",
+        "icon": "$(add)"
+      },
+      {
+        "command": "claudeProjectsHub.deleteTopic",
+        "title": "Supprimer le topic",
+        "category": "Claude Hub"
+      },
+      {
+        "command": "claudeProjectsHub.importTopic",
+        "title": "Importer en topic",
+        "category": "Claude Hub"
+      },
+      {
+        "command": "claudeProjectsHub.resumeInClaude",
+        "title": "Reprendre dans Claude",
+        "category": "Claude Hub"
+      },
+      {
+        "command": "claudeProjectsHub.resumeInTerminal",
+        "title": "Reprendre dans un terminal",
+        "category": "Claude Hub"
+      },
+      {
+        "command": "claudeProjectsHub.openFolder",
+        "title": "Ouvrir le dossier",
+        "category": "Claude Hub"
+      },
+      {
+        "command": "claudeProjectsHub.diagnostics",
+        "title": "Diagnostic",
+        "category": "Claude Hub"
+      }
+    ],
+    "configuration": {
+      "title": "Claude Hub",
+      "properties": {
+        "claudeProjectsHub.showTemporaryProjects": {
+          "type": "boolean",
+          "default": false,
+          "description": "Afficher le nœud « Temporaires » (sessions des dossiers exclus)."
+        }
+      }
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "claudeProjectsHub.refresh",
+          "when": "view == claudeProjectsHub.projects",
+          "group": "navigation@2"
+        },
+        {
+          "command": "claudeProjectsHub.newTopic",
+          "when": "view == claudeProjectsHub.projects",
+          "group": "navigation@1"
+        },
+        {
+          "command": "claudeProjectsHub.refresh",
+          "when": "view == claudeProjectsHub.globalMemory",
+          "group": "navigation@2"
+        },
+        {
+          "command": "claudeProjectsHub.newTopic",
+          "when": "view == claudeProjectsHub.globalMemory",
+          "group": "navigation@1"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "claudeProjectsHub.newTopic",
+          "when": "viewItem == memoryGroup",
+          "group": "inline"
+        },
+        {
+          "command": "claudeProjectsHub.deleteTopic",
+          "when": "viewItem == topic"
+        },
+        {
+          "command": "claudeProjectsHub.importTopic",
+          "when": "viewItem == note"
+        },
+        {
+          "command": "claudeProjectsHub.resumeInClaude",
+          "when": "viewItem == session"
+        },
+        {
+          "command": "claudeProjectsHub.resumeInTerminal",
+          "when": "viewItem == session"
+        },
+        {
+          "command": "claudeProjectsHub.openFolder",
+          "when": "viewItem == project"
+        }
+      ]
+    }
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "node esbuild.mjs",
-    "test": "node --test \"src/**/*.test.ts\"",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"src/**/*.test.ts\"",
     "test:ext": "node test/extension/run.ts",
-    "probe": "node scripts/probe.ts",
+    "probe": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/probe.ts",
     "package": "vsce package --no-dependencies --skip-license"
   },
   "devDependencies": {
