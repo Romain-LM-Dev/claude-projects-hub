@@ -101,8 +101,8 @@ Liste fermée, testée ; elle ne prétend pas tout détecter (consigne dans la d
 
 ## 5. Outils MCP (serveur `hub`, plugin `projects-hub`)
 
-Nom vu par Claude : `mcp__plugin_projects-hub_hub__<outil>` (préfixe à confirmer à l'étape T6, porté par une
-constante unique `TOOL_PREFIX`). Projet de la session : `$CLAUDE_PROJECT_DIR` (exporté par Claude Code aux serveurs
+Nom vu par Claude : `mcp__plugin_projects-hub_hub__<outil>` (préfixe confirmé en T6 sur une vraie session
+`claude -p`, Claude Code 2.1.317 ; porté par une constante unique `TOOL_PREFIX`). Projet de la session : `$CLAUDE_PROJECT_DIR` (exporté par Claude Code aux serveurs
 MCP de plugin), sinon `process.cwd()`. Résultats : contenu texte ; erreurs : `isError: true` et texte
 `ERREUR <code> : <message>`. Codes : `invalid_ref`, `invalid_input`, `not_found`, `exists`, `conflict`,
 `too_large`, `secret_detected`, `invalid_file`, `io`, `excluded` (ref `project:` depuis un dossier exclu, §7.3).

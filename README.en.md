@@ -10,36 +10,131 @@ A VS Code extension and Claude Code plugin (package `claude-projects-hub`, publi
 Claude Code projects and sessions on the machine and provides topic-based memory, shared across a project's sessions
 and across projects, which Claude reads and writes through an MCP server `hub` and a SessionStart hook.
 
+The interface and command titles are in French; they are quoted as-is below.
+
 ## Project status
 
-Version `0.0.1`, in development. The design is done (`docs/architecture.md`, ADRs 0001 to 0006, `docs/plan.md`) and
-only the repository groundwork (task T0) is in place: the extension's activation (`src/extension/extension.ts`) is
-empty and `package.json` does not declare any command or setting yet. Resume point: `docs/reprise.md`.
+Plugin version 0.1.0 (`claude-plugin/projects-hub/.claude-plugin/plugin.json`); `package.json` still says `0.0.1`.
+Private repository, no license for now. See [CHANGELOG.md](CHANGELOG.md). Resume point: `docs/reprise.md`.
 
-## Planned features (v1)
+## Features
 
-Described in `docs/architecture.md`, not implemented yet:
-
-- **Projects and sessions**: list in VS Code every Claude Code project on the machine and its sessions (CLI and
-  official extension alike), including running sessions and subagents.
-- **Topic-based memory**: project topics and global topics, stored as plain Markdown files in
-  `~/.claude-projects-hub`, readable and editable by the user.
+- **Projects and sessions**: every Claude Code project on the machine and its sessions (CLI and official extension
+  alike), including running sessions and subagents.
+- **Topic-based memory**: project topics and global topics, as Markdown files in `~/.claude-projects-hub`, readable
+  and editable by the user.
 - **MCP tools** `memory_list`, `memory_read`, `memory_write` and `memory_append`, used by Claude during sessions.
-- **SessionStart hook**: injects the topic index at the start of each session (4,000 characters at most).
-- **Project identity**: memory stays attached to the right project when its folder is moved or renamed, and Claude
-  transcripts and auto-memory left orphaned are reattached.
+- **SessionStart hook**: injects the topic index at the start of each session (4,000 characters at most). Index line
+  dates are in local time.
+- **Project identity**: memory follows the project when its folder is moved or renamed; orphaned Claude transcripts
+  and auto-memory are reattached.
 - **VS Code views**: a "Claude Hub" container with the "Projets" and "Mémoire globale" views.
-- **Privacy**: nothing leaves the machine, no network calls; a few secret formats are detected before any topic is
-  written.
 
 ## Requirements
 
-- VS Code `^1.100.0` (the `engines.vscode` field of `package.json`).
-- Node.js 20 or later on the PATH for the hook and the MCP server; development uses Node 24
-  (`node --test` on `.ts` files).
-- Claude Code (CLI or official extension).
+| Item | Version |
+|---|---|
+| VS Code | `^1.100.0` (`engines.vscode`) |
+| Node.js | 20 or later, on the PATH (hook and MCP server); development uses Node 24 |
+| Claude Code | 2.1.223 or later (CLI or official extension) |
 
-## Installation and build
+## Installation
+
+1. Build the package: `npm install`, `npm run build`, then `npm run package` (produces a `.vsix`).
+2. Install the `.vsix` in VS Code: `code --install-extension <file>.vsix`.
+3. Run the command "Claude Hub: Installer l'intégration Claude". It checks Node, copies the plugin to
+   `~/.claude-projects-hub/marketplace`, then runs `claude plugin marketplace add` and `claude plugin install`
+   (plugin `projects-hub`, marketplace `projects-hub-local`).
+4. If `claude` is not on the PATH, the command shows two `/plugin …` commands to type in Claude Code instead.
+5. "Claude Hub: Retirer l'intégration" uninstalls the plugin.
+
+After an extension update, running "Installer l'intégration Claude" again recopies the plugin.
+
+### Permission rule
+
+Without a rule, Claude asks permission on every MCP tool call. The tools are named
+`mcp__plugin_projects-hub_hub__memory_list`, `…_memory_read`, `…_memory_write` and `…_memory_append`. The rule
+`mcp__plugin_projects-hub_hub` allows them all.
+
+- On the developer's machine it is already in `~/.claude/settings.json`.
+- Elsewhere, add it yourself to `permissions.allow`:
+
+```json
+{
+  "permissions": {
+    "allow": ["mcp__plugin_projects-hub_hub"]
+  }
+}
+```
+
+The extension never modifies this file.
+
+## Commands
+
+All belong to the "Claude Hub" category. "Rattacher à un projet…", "Détacher ce dossier", "Ignorer ce candidat",
+"Ignorer l'orphelin" and "Copier l'auto-mémoire" exist only in the views' context menus, not in the command palette.
+
+| Command | Purpose |
+|---|---|
+| Rafraîchir | rereads projects, sessions and topics |
+| Nouveau topic | creates a project or global topic |
+| Supprimer le topic | sends the topic file to the trash |
+| Importer en topic | turns an auto-memory note into a topic |
+| Reprendre dans Claude | reopens the session in the Claude extension |
+| Reprendre dans un terminal | `claude --resume <id>` in the project folder |
+| Ouvrir le dossier | opens the project folder |
+| Rattacher à un projet… | merges an orphan, a candidate or a clone into another project; topics are moved, a clashing slug gets a suffix |
+| Détacher ce dossier | gives the folder a fresh identity; topics stay with the original project |
+| Ignorer ce candidat | rejects a proposed attachment |
+| Ignorer l'orphelin | hides the orphan; it can still be attached by hand |
+| Annuler le dernier rattachement | undoes the automatic merges of the last scan; they are not redone on the next scan |
+| Copier l'auto-mémoire | copies Claude auto-memory to the new folder after confirmation; nothing is overwritten |
+| Rafraîchir les empreintes | recomputes the projects' git fingerprints |
+| Aperçu de l'injection | shows the text the hook injects for this project |
+| Installer l'intégration Claude | installs the plugin (see Installation) |
+| Retirer l'intégration | uninstalls the plugin |
+| Diagnostic | output channel: unreadable lines, unknown types, log tails |
+
+Setting: `claudeProjectsHub.showTemporaryProjects` (default `false`) shows the "Temporaires" node (sessions of
+excluded folders).
+
+## Project marker
+
+On the first Claude session in a folder, the hook writes `.claude/projects-hub.json` (one identifier) at the project
+root.
+
+| Rule | Detail |
+|---|---|
+| Local | never versioned: in a git repository, the line `/.claude/projects-hub.json` is added to `.git/info/exclude`, never to a `.gitignore` |
+| Absent | from temporary folders, the home folder, a drive root, `~/.claude` and `~/.claude-projects-hub`: only global topics are injected there |
+| Clones and worktrees | separate projects, each with its own identity, unless you merge them with "Rattacher à un projet…" |
+| Folder copy | a copy that includes its marker shares the project's identity |
+
+## Locations
+
+| Name | Default | Variable |
+|---|---|---|
+| `HUB_HOME` | `~/.claude-projects-hub` | `CLAUDE_PROJECTS_HUB_HOME` |
+| `CLAUDE_HOME` | `~/.claude` | `CLAUDE_CONFIG_DIR` |
+
+`CLAUDE_HOME` is read-only, except for the auto-memory copy you confirm.
+
+## Privacy
+
+- Nothing leaves the machine; no network calls.
+- **Global topics are injected into every project**: information about one client can reach another project. Put
+  nothing confidential in them. They are visible and editable in the "Mémoire globale" view.
+- Before any topic is written, a few secret formats are refused (private keys, Anthropic keys, GitHub tokens, AWS
+  keys, Slack tokens). The list is closed and does not catch everything.
+
+## Deferred (out of v1)
+
+Injection into subagents; UserPromptSubmit reminders; a delete tool for Claude; full-text search in transcripts; a
+webview dashboard; archiving transcripts before Claude Code purges them; moving orphaned transcripts; falling back
+to the Agent SDK if the JSONL format changes; syncing memory between machines; Node provided by VS Code when Node
+is missing; a permission rule written by the extension; GitHub Actions CI; Marketplace publication.
+
+## Development
 
 ```powershell
 npm install
@@ -51,19 +146,11 @@ npm test
 | Script | Purpose |
 |---|---|
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm run build` | esbuild: `dist/extension.js`, `claude-plugin/projects-hub/dist/hook.js`, `claude-plugin/projects-hub/dist/mcp.js` (missing entries are skipped) |
+| `npm run build` | esbuild: `dist/extension.js`, `claude-plugin/projects-hub/dist/hook.js`, `claude-plugin/projects-hub/dist/mcp.js` |
 | `npm test` | `node --test "src/**/*.test.ts"` |
 | `npm run test:ext` | extension tests in a VS Code host |
 | `npm run probe` | read-only probe of the real `CLAUDE_HOME` |
 | `npm run package` | `.vsix` file (`vsce package --no-dependencies --skip-license`) |
-
-The entry files for `test:ext` (`test/extension/run.ts`) and `probe` (`scripts/probe.ts`) are not written yet.
-
-## Usage
-
-No command or setting is declared in `package.json` yet. The planned commands (Rafraîchir, Nouveau topic, Installer
-l'intégration Claude, Aperçu de l'injection, etc.) and the `claudeProjectsHub.showTemporaryProjects` setting are
-described in §9 and §10 of `docs/architecture.md`.
 
 ## Architecture
 
