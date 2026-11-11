@@ -39,7 +39,17 @@ export class Hub {
   constructor(hubHome: string, claudeHome: string) { this.hubHome = hubHome; this.claudeHome = claudeHome; }
   get cachePath() { return join(this.hubHome, "cache", "sessions-v1.json"); }
   invalidate() { this.data = undefined; }
-  get(): Promise<Data> { return (this.data ??= this.load()); }
+  get(): Promise<Data> {
+    if (this.data) return this.data;
+    const p = this.data = this.load();
+    // A failed scan must not stay cached: the next get() retries.
+    p.catch((e: Error) => {
+      if (this.data === p) this.data = undefined;
+      this.log(`scan : ${e.message}`);
+      void vscode.window.showErrorMessage(`Claude Hub : scan impossible : ${e.message}`);
+    });
+    return p;
+  }
 
   private async load(): Promise<Data> {
     const t0 = Date.now();
@@ -49,7 +59,10 @@ export class Hub {
     const reg = (await readRegistry(this.hubHome).catch(() => ({ reg: emptyRegistry() }))).reg;
     const out: Data = { projects: [], temp: [], reg, reloc };
     for (const info of projects) {
-      const r = await resolveProject(info.cwd, { hubHome: this.hubHome });
+      const r = await resolveProject(info.cwd, { hubHome: this.hubHome }).catch((e: Error) => {
+        this.log(`projet ${info.cwd} non résolu : ${e.message}`);
+        return { status: "unregistered" as const };
+      });
       const id = r.status === "resolved" ? r.id : undefined;
       const p: Proj = { info, id, name: (id && reg.projects[id]?.name) || basename(info.cwd) || info.cwd };
       (r.status === "excluded" ? out.temp : out.projects).push(p);

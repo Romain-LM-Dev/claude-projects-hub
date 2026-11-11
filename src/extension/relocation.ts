@@ -54,9 +54,9 @@ export function registerRelocation(hub: Hub, refresh: () => void): { state: Relo
       })),
       // Without argument: undoes the merges of the last pass (the next scan merges again unless the pair is dismissed: core limit, entries created in the pass are not in the .bak).
       cmd("undoMerge", (arg?: MergeRecord[]) => run(async () => {
-        const recs = [...(Array.isArray(arg) ? arg : state.lastMerges)].reverse();
+        const recs = Array.isArray(arg) ? arg : state.lastMerges;
         if (!recs.length) { void vscode.window.showInformationMessage("Claude Hub : aucun rattachement à annuler."); return; }
-        for (const r of recs) await undoMerge(hub.hubHome, r);
+        await undoMerge(hub.hubHome, recs);
         state.lastMerges = [];
       })),
       cmd("refreshFingerprints", () => run(() => updateRegistry(hub.hubHome, async (reg) => { for (const e of Object.values(reg.projects)) delete e.git; }))),

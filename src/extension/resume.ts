@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { existsSync } from "node:fs";
 import type { Node } from "./tree.ts";
 
-const ID = /^[A-Za-z0-9-]+$/;
+const ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function registerResume(): vscode.Disposable[] {
   return [
