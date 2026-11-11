@@ -263,7 +263,9 @@ Pour chaque orphelin O (non ignoré), candidats C = projets vivants, hors `O.dis
   absents), C sans topic, et un seul C dans ce cas. → fusion automatique : copie de sauvegarde
   `registry.json.bak`, `O.paths += C.paths`, `O.claudeDirs += C.claudeDirs`, C supprimé, marqueur de C réécrit avec
   l'id de O s'il existe ; notification « Projet X rattaché à son nouveau dossier » avec bouton Annuler (restaure le
-  `.bak` et le marqueur). Un seul `.bak` par passage, pris avant sa première fusion : une seule notification par
+  `.bak` et le marqueur, puis inscrit C dans `O.dismissed` : le scan suivant ne refait pas la fusion, « Rattacher à
+  un projet… » reste possible). Un seul `.bak` par passage, pris juste avant sa première fusion (registre en mémoire,
+  entrées créées par ce passage comprises, pour que C garde son id après Annuler) : une seule notification par
   passage (noms des projets rattachés) ; Annuler défait toutes les fusions du passage (`undoMerge` sur chaque
   enregistrement, ordre inverse). `MergeRecord.backupRevision` = révision (§4.2) du `.bak` écrit ; `undoMerge` refuse
   (`conflict`) si le `.bak` a changé depuis (fusion ou rattachement plus récent). Les entrées créées entre la fusion et
@@ -420,4 +422,5 @@ quand Node manque ; règle de permission posée par l'extension ; CI GitHub Acti
 | 2026-11-11 | j5 | §7.5 | limites de `copyAutoMemory` acceptées |
 | 2026-11-11 | j6 | §7.4 | aucun git sous le verrou du registre (code à changer) |
 | 2026-11-11 | a, b, h | ADR 0005, ADR 0001 | amendements datés |
+| 2026-11-11 | o | §7.4 | Annuler durable : `.bak` pris juste avant la première fusion (C garde son id), C inscrit dans `O.dismissed` (défaut trouvé en T8 : le scan suivant refusionnait) |
 | 2026-11-11 | k, l, m | §5, §6.3 | date locale dans les lignes d'index ; `excluded` dans le type des codes ; format `tags: [a, b]` de `memory_read` ; `writeTopic` accepte `importedFrom` (import d'auto-mémoire) |

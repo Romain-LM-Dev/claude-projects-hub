@@ -25,7 +25,6 @@ test('moved repo without marker: session creates C, scan merges automatically, u
   renameSync(a, b);
   const c = (await ens(sb, b))!;
   assert.notEqual(c.id, oid);
-  const before = readFileSync(registryFile(sb.hub), 'utf8');
 
   const res = await rec(sb, [info(a, 'old-enc'), info(b, 'new-enc')]);
   assert.equal(res.merges.length, 1);
@@ -36,8 +35,29 @@ test('moved repo without marker: session creates C, scan merges automatically, u
   assert.equal(markerId(b), oid);
 
   await undoMerge(sb.hub, res.merges[0]!);
-  assert.equal(readFileSync(registryFile(sb.hub), 'utf8'), before);
+  const after = (await readRegistry(sb.hub)).reg;
+  assert.deepEqual(after.projects[oid]!.dismissed, [c.id]);
+  assert.deepEqual(after.projects[c.id]!.paths, [b]);
+  assert.deepEqual(after.projects[oid]!.paths, []);
   assert.equal(markerId(b), c.id);
+});
+
+test('undo of a merge whose C was created by the scan itself: C keeps its id, pair dismissed, next scan does not merge again', async () => {
+  const sb = sandbox();
+  const a = initRepo(sb.dir('old'), 'https://github.com/u/r.git');
+  await rec(sb, [info(a, 'old-enc')]);
+  const oid = Object.keys((await readRegistry(sb.hub)).reg.projects)[0]!;
+  const b = join(sb.base, 'w', 'new');
+  renameSync(a, b);
+  const ps = [info(a, 'old-enc'), info(b, 'new-enc')];
+  const res = await rec(sb, ps);
+  assert.equal(res.merges.length, 1);
+  const cid = res.merges[0]!.removedId;
+  await undoMerge(sb.hub, res.merges[0]!);
+  const { reg } = await readRegistry(sb.hub);
+  assert.deepEqual(reg.projects[cid]!.paths, [b]);
+  assert.deepEqual(reg.projects[oid]!.dismissed, [cid]);
+  assert.deepEqual((await rec(sb, ps)).merges, []);
 });
 
 test('undoMerge refuses (conflict) when a later pass rewrote the .bak; registry untouched', async () => {

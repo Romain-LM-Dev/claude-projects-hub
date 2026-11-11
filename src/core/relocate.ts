@@ -111,7 +111,7 @@ export async function reconcile(projects: ProjectInfo[], o: ReconcileOpts): Prom
   }
   const result: ReconcileResult = { merges: [], proposals: [], orphans: [] };
 
-  await updateRegistry(o.hubHome, async (reg, raw) => {
+  await updateRegistry(o.hubHome, async (reg) => {
     const E = reg.projects;
     for (const p of live) {
       const m = (await findMarker(p.cwd)).id;
@@ -147,7 +147,7 @@ export async function reconcile(projects: ProjectInfo[], o: ReconcileOpts): Prom
         if (shareRoot(O, C) && O.git!.remote === C.git!.remote && !(await listTopics({ hubHome: o.hubHome, projectId: cid }, 'project')).length) certain.push(cid);
       }
       if (certain.length === 1) {
-        rev ??= await backup(o.hubHome, raw);
+        rev ??= await backup(o.hubHome, serializeRegistry(reg)); // in-memory state: includes entries created by this pass
         const rec = await mergeEntries(o.hubHome, reg, oid, certain[0]!, rev);
         result.merges.push(rec);
         o.log?.(`Projet ${rec.keptName} rattaché à son nouveau dossier`);
@@ -171,7 +171,10 @@ export async function undoMerge(hubHome: string, rec: MergeRecord): Promise<void
     let bak: Buffer;
     try { bak = await readFile(registryBackup(hubHome)); } catch { throw new HubError('not_found', 'registry.json.bak introuvable'); }
     if (revisionOf(bak) !== rec.backupRevision) throw new HubError('conflict', 'registry.json.bak a été réécrit depuis cette fusion : annulation impossible');
-    await writeFileAtomic(registryFile(hubHome), bak.toString('utf8'));
+    const restored = JSON.parse(bak.toString('utf8')) as Registry;
+    const d = restored.projects[rec.keptId]?.dismissed; // the refused pair must not be merged again by the next scan
+    if (d && !d.includes(rec.removedId)) d.push(rec.removedId);
+    await writeFileAtomic(registryFile(hubHome), serializeRegistry(restored));
     for (const f of rec.markers) {
       const dir = join(f, '..', '..');
       if ((await readMarker(dir)) === rec.keptId) await writeFileAtomic(f, markerJson(rec.removedId));
@@ -185,9 +188,9 @@ export async function undoMerge(hubHome: string, rec: MergeRecord): Promise<void
 /** Manual "Rattacher à un projet…": `keptId` absorbs `absorbedId` (orphan or live). Same merge as automatic, with .bak. */
 export async function attachProject(hubHome: string, keptId: string, absorbedId: string): Promise<MergeRecord> {
   if (keptId === absorbedId) throw new HubError('invalid_input', 'rattachement d\'un projet à lui-même');
-  return updateRegistry(hubHome, async (reg, raw) => {
+  return updateRegistry(hubHome, async (reg) => {
     if (!reg.projects[keptId] || !reg.projects[absorbedId]) throw new HubError('not_found', 'projet inconnu');
-    return mergeEntries(hubHome, reg, keptId, absorbedId, await backup(hubHome, raw));
+    return mergeEntries(hubHome, reg, keptId, absorbedId, await backup(hubHome, serializeRegistry(reg)));
   });
 }
 
