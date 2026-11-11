@@ -32,6 +32,7 @@ export async function run(): Promise<void> {
   assert.ok(topics.some((n) => n.kind === "topic" && n.entry.ref === "global:essai"), "topic créé absent de la vue");
 
   await relocationSuite(api);
+  await installSuite();
 }
 
 const claudeHome = () => process.env.CLAUDE_CONFIG_DIR!;
@@ -151,4 +152,43 @@ async function relocationSuite(api: Api) {
   } finally {
     try { rmSync(base, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); } catch { /* Windows may hold the folder while VS Code watches it: run.ts removes it afterwards */ }
   }
+}
+
+type Call = [string, string[]];
+async function installSuite() {
+  const calls: Call[] = [];
+  const fake = (fail?: (c: string, a: string[]) => Error | undefined) => async (c: string, a: string[]) => {
+    calls.push([c, a]);
+    const e = fail?.(c, a);
+    if (e) throw e;
+    return { stdout: c === "node" ? "v24.0.0" : "{}" };
+  };
+  const run = (id: string, o: object) => vscode.commands.executeCommand(id, { silent: true, ...o });
+  const dest = join(hubHome(), "marketplace");
+  writeFileSync(join(hubHome(), "stale.txt"), "x");
+  mkdirSync(dest, { recursive: true });
+  writeFileSync(join(dest, "stale.txt"), "x");
+
+  assert.equal(await run("claudeProjectsHub.installIntegration", { exec: fake() }), "installed");
+  assert.ok(existsSync(join(dest, ".claude-plugin", "marketplace.json")) && existsSync(join(dest, "projects-hub", "dist", "mcp.js")), "copie vers marketplace");
+  assert.ok(!existsSync(join(dest, "stale.txt")), "remplacement complet");
+  assert.deepEqual(calls, [
+    ["node", ["--version"]],
+    ["claude", ["plugin", "marketplace", "add", dest, "--json"]],
+    ["claude", ["plugin", "install", "projects-hub@projects-hub-local", "--json"]],
+  ]);
+
+  const already = fake((c) => (c === "claude" ? new Error("Plugin already installed") : undefined));
+  assert.equal(await run("claudeProjectsHub.installIntegration", { exec: already }), "installed", "déjà installé = succès");
+
+  const noClaude = fake((c) => (c === "claude" ? Object.assign(new Error("spawn claude ENOENT"), { code: "ENOENT" }) : undefined));
+  assert.equal(await run("claudeProjectsHub.installIntegration", { exec: noClaude }), "no-claude");
+
+  const oldNode = async () => ({ stdout: "v18.0.0" });
+  assert.equal(await run("claudeProjectsHub.installIntegration", { exec: oldNode }), "node-old");
+
+  calls.length = 0;
+  assert.equal(await run("claudeProjectsHub.removeIntegration", { exec: fake() }), "removed");
+  assert.deepEqual(calls, [["claude", ["plugin", "uninstall", "projects-hub@projects-hub-local", "--json"]]]);
+  assert.equal(await run("claudeProjectsHub.removeIntegration", { exec: noClaude }), "no-claude");
 }

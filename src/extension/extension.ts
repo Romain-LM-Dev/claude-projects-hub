@@ -4,6 +4,7 @@ import { claudeHome, hubHome } from "../core/paths.ts";
 import { setupDiagnostics } from "./diagnostics.ts";
 import { registerPreview } from "./preview.ts";
 import { registerRelocation } from "./relocation.ts";
+import { registerInstall } from "./install.ts";
 import { registerResume } from "./resume.ts";
 import { openSession, SCHEME, SessionDocuments } from "./sessionDocument.ts";
 import { registerTopicCommands } from "./topicCommands.ts";
@@ -39,6 +40,7 @@ export function activate(context: vscode.ExtensionContext) {
     { dispose: () => clearTimeout(timer) },
     ...setupDiagnostics(hub),
     ...registerResume(),
+    ...registerInstall(context, hub.hubHome),
     ...registerTopicCommands(hub, refresh),
     ...reloc.disposables,
     ...registerPreview(hub),

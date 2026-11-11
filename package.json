@@ -5,6 +5,10 @@
   "version": "0.0.1",
   "publisher": "romain-lm-dev",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Romain-LM-Dev/claude-projects-hub"
+  },
   "engines": {
     "vscode": "^1.100.0"
   },
@@ -115,6 +119,16 @@
       {
         "command": "claudeProjectsHub.previewInjection",
         "title": "Aperçu de l'injection",
+        "category": "Claude Hub"
+      },
+      {
+        "command": "claudeProjectsHub.installIntegration",
+        "title": "Installer l'intégration Claude",
+        "category": "Claude Hub"
+      },
+      {
+        "command": "claudeProjectsHub.removeIntegration",
+        "title": "Retirer l'intégration",
         "category": "Claude Hub"
       }
     ],

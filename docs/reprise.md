@@ -60,7 +60,17 @@ l'accord de l'utilisateur (sauvegarde `settings.json.bak-20261111`) ; vérifié 
 T8 fait (non commité) : `src/extension/{relocation,preview}.ts`, `tree.ts`, `extension.ts`, `package.json`,
 `test/extension/`. Défaut trouvé (point o) : Annuler n'était pas durable ; corrigé.
 
-## Prochaine vague (vague 6) : T9 · dev-vscode
+## Vague 6 : T9 · dev-vscode
+Partie code faite (`src/extension/install.ts`, commandes `installIntegration` / `removeIntegration`, champ
+`repository`) ; vérifié par l'orchestrateur le 2026-11-11 : `npm test` 79/79, `test:ext` code 0 (installation testée
+avec un exécuteur injecté, jamais le vrai `claude`), `npm run package` -> `claude-projects-hub-0.0.1.vsix` 162 074
+octets, 11 fichiers (extension + plugin, ni `src/`, ni `test/`, ni `dist/test-suite.js`). Reste, avec l'accord de
+l'utilisateur : installation réelle (`code --install-extension`, recharger, « Claude Hub: Installer l'intégration
+Claude », `claude plugin list --json`), question « Quels topics de mémoire partagée vois-tu ? » dans une nouvelle
+session, `claude --resume` d'une session orpheline rattachée ; message réel de `claude` pour « déjà installé » à
+relever (supposé contenir « already »).
+
+Énoncé d'origine :
 `.vsix` < 3 Mo (`.vscodeignore`, point n), commande « Installer l'intégration Claude » (copie vers
 `HUB_HOME/marketplace`, `claude plugin marketplace add` puis `install`), installation réelle, question
 « Quels topics de mémoire partagée vois-tu ? » dans une vraie session, `claude --resume` d'une session orpheline.
