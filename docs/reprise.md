@@ -44,14 +44,27 @@ volontairement cassée (test négatif) ; plus grosse session réelle 142 Mo, pag
 Reste de T7 : essai manuel F5 par l'utilisateur (`npm run build`, F5 « Extension », icône « Claude Hub »,
 ouvrir la plus grosse session, « Claude Hub: Diagnostic », relever « document … page 1 : N ms »).
 
-## Vague 5 (à lancer)
+## Vague 5 (lancée le 2026-11-11, après les commits `ae1e6da` à `553ff2d` ; `injectionFor` extrait dans `src/hook/context.ts` pour l'aperçu)
 | Tâche | Agent | Objet |
 |---|---|---|
 | T6 | dev-claude | plugin, `claude plugin validate`, `scripts/e2e-claude.ps1` (vraies sessions `claude -p`), préfixe réel des outils |
 | T8 | dev-vscode | nœuds « À rattacher »/« Orphelins », Rattacher/Détacher/Copier l'auto-mémoire/Rafraîchir les empreintes, Aperçu de l'injection |
 
-Après T6 : règle `mcp__plugin_<préfixe réel>` ajoutée à `~/.claude/settings.json` par config-claude, avec
-l'accord de l'utilisateur.
+T6 fait (non commité) : `claude-plugin/` (marketplace `projects-hub-local`, plugin `projects-hub` : `plugin.json`,
+`hooks/hooks.json`, `.mcp.json`), `scripts/e2e-claude.ps1`. Préfixe réel relevé : `mcp__plugin_projects-hub_hub__`
+(= `TOOL_PREFIX`). Vérifié par l'orchestrateur : `claude plugin validate` plugin et marketplace -> « Validation
+passed ». E2E (sortie de l'agent, 4 `claude -p` au total) : mot témoin cité dans la réponse finale, `essai.md` écrit
+avec `title`/`summary` ; SessionStart part bien en `-p`.
+Règle `mcp__plugin_projects-hub_hub` ajoutée à `~/.claude/settings.json` par config-claude le 2026-11-11 avec
+l'accord de l'utilisateur (sauvegarde `settings.json.bak-20261111`) ; vérifié : JSON valide, règle présente 1 fois.
+T8 fait (non commité) : `src/extension/{relocation,preview}.ts`, `tree.ts`, `extension.ts`, `package.json`,
+`test/extension/`. Défaut trouvé (point o) : Annuler n'était pas durable ; corrigé.
+
+## Prochaine vague (vague 6) : T9 · dev-vscode
+`.vsix` < 3 Mo (`.vscodeignore`, point n), commande « Installer l'intégration Claude » (copie vers
+`HUB_HOME/marketplace`, `claude plugin marketplace add` puis `install`), installation réelle, question
+« Quels topics de mémoire partagée vois-tu ? » dans une vraie session, `claude --resume` d'une session orpheline.
+Puis T10 (documentaliste : README, CHANGELOG) et T11 (qa-reviewer).
 
 Puis la suite du plan. Session lancée depuis le dossier parent : les agents du projet ne sont pas chargés ;
 lancer la session dans `claude-projects-hub` (ou déléguer à `team-for-every-project:developpeur` avec les règles
@@ -71,6 +84,8 @@ de l'agent du projet dans le brief). Fin de chantier : qa-reviewer, puis documen
 | i | Course possible si deux processus reprennent le même verrou périmé (> 10 s) : accepté, commentaire `shortcut` dans `lock.ts` | - |
 | k, l, m | Réglés le 2026-11-11 (§5, §6.3, §14) : date locale dans les lignes d'index (test à 23 h 30 locale, passe aussi en `TZ=America/New_York`) ; `excluded` ajouté à `ErrorCode`, cast retiré de `tools.ts` ; `tags: [a, b]` inscrit au §5 ; `writeTopic` accepte `importedFrom`, passé par « Importer en topic » (test ajouté) ; `npm test` -> 78/78 | - |
 | n | `dist/test-suite.js` est produit dans `dist/` : l'exclure du `.vsix` (`.vscodeignore`), comme `.vscode/`, `.vscode-test/`, `src/`, `test/` | dev-vscode, T9 |
+| o | Réglé le 2026-11-11 (§7.4) : Annuler d'une fusion non durable (`.bak` pris avant la création de C, aucun refus inscrit → le scan suivant refusionnait). `.bak` = registre en mémoire juste avant la première fusion, `undoMerge` inscrit C dans `O.dismissed`. Le nouveau test échoue sur `553ff2d`, passe après ; `npm test` 79/79 ; `test:ext` code 0 (deux fois par l'agent, une fois par l'orchestrateur) | - |
+| p | Chemins de T8 non testés, vérifiés par lecture seule : Rattacher depuis une proposition, QuickPick de `attachProject`, boîte modale de copie, Rafraîchir les empreintes, `undoMerge` en `conflict` ; `test:ext` jugé fragile par T8 (EPERM sur `rmSync` dans l'hôte) | qa-reviewer, T11 |
 | j | Écarts de T3 au §7 : (1) « Ignorer l'orphelin » stocké en mettant l'id de l'orphelin dans son propre `dismissed` (aucun champ prévu) ; (2) marqueur trouvé dans un parent sans `.git` -> racine = dossier du marqueur (§7.3 dit « sinon dir ») ; (3) `ensureProject` ne retire pas un chemin disparu (le scan le fait) ; (4) un `.bak` par passage de `reconcile`, Annuler défait toutes les fusions du passage ; (5) `copyAutoMemory` ne lit que `claudeHome/settings.json` pour `autoMemoryDirectory`, casse `C-`/`c-` de la cible non gérée ; (6) empreintes calculées hors verrou : un projet créé pendant le scan attend le scan suivant. Tranché (§7.1 l.200-202, §7.3 l.224-226 et 240-242, §7.4 l.253-270, §7.5 l.297-300) : 1, 2, 3, 5 entérinés ; défauts réels à corriger : j4 (`MergeRecord.backupRevision`, `undoMerge` -> `conflict` si `.bak` réécrit) et j6 (`relocate.ts:126` lançait git sous le verrou du registre, jusqu'à 6 s par entrée, verrou repris au-delà de 10 s). Corrigés le 2026-11-11 (non commité) : précalcul hors verrou pour toute entrée à chemin vivant sans `git` ; les deux nouveaux tests échouent sur HEAD `9616834` et passent après correction ; `node --test src/core/*.test.ts` -> 58/58, code 0 | - |
 
 ## Risques

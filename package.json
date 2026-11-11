@@ -76,6 +76,46 @@
         "command": "claudeProjectsHub.diagnostics",
         "title": "Diagnostic",
         "category": "Claude Hub"
+      },
+      {
+        "command": "claudeProjectsHub.attachProject",
+        "title": "Rattacher à un projet…",
+        "category": "Claude Hub"
+      },
+      {
+        "command": "claudeProjectsHub.detachDir",
+        "title": "Détacher ce dossier",
+        "category": "Claude Hub"
+      },
+      {
+        "command": "claudeProjectsHub.dismissCandidate",
+        "title": "Ignorer ce candidat",
+        "category": "Claude Hub"
+      },
+      {
+        "command": "claudeProjectsHub.dismissOrphan",
+        "title": "Ignorer l'orphelin",
+        "category": "Claude Hub"
+      },
+      {
+        "command": "claudeProjectsHub.undoMerge",
+        "title": "Annuler le dernier rattachement",
+        "category": "Claude Hub"
+      },
+      {
+        "command": "claudeProjectsHub.copyAutoMemory",
+        "title": "Copier l'auto-mémoire",
+        "category": "Claude Hub"
+      },
+      {
+        "command": "claudeProjectsHub.refreshFingerprints",
+        "title": "Rafraîchir les empreintes",
+        "category": "Claude Hub"
+      },
+      {
+        "command": "claudeProjectsHub.previewInjection",
+        "title": "Aperçu de l'injection",
+        "category": "Claude Hub"
       }
     ],
     "configuration": {
@@ -136,6 +176,72 @@
         {
           "command": "claudeProjectsHub.openFolder",
           "when": "viewItem == project"
+        },
+        {
+          "command": "claudeProjectsHub.attachProject",
+          "when": "viewItem == project"
+        },
+        {
+          "command": "claudeProjectsHub.detachDir",
+          "when": "viewItem == project"
+        },
+        {
+          "command": "claudeProjectsHub.copyAutoMemory",
+          "when": "viewItem == project"
+        },
+        {
+          "command": "claudeProjectsHub.previewInjection",
+          "when": "viewItem == project"
+        },
+        {
+          "command": "claudeProjectsHub.attachProject",
+          "when": "viewItem == proposal"
+        },
+        {
+          "command": "claudeProjectsHub.dismissCandidate",
+          "when": "viewItem == proposal"
+        },
+        {
+          "command": "claudeProjectsHub.dismissOrphan",
+          "when": "viewItem == proposal"
+        },
+        {
+          "command": "claudeProjectsHub.copyAutoMemory",
+          "when": "viewItem == proposal"
+        },
+        {
+          "command": "claudeProjectsHub.attachProject",
+          "when": "viewItem == orphan"
+        },
+        {
+          "command": "claudeProjectsHub.dismissOrphan",
+          "when": "viewItem == orphan"
+        },
+        {
+          "command": "claudeProjectsHub.copyAutoMemory",
+          "when": "viewItem == orphan"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "claudeProjectsHub.attachProject",
+          "when": "false"
+        },
+        {
+          "command": "claudeProjectsHub.detachDir",
+          "when": "false"
+        },
+        {
+          "command": "claudeProjectsHub.dismissCandidate",
+          "when": "false"
+        },
+        {
+          "command": "claudeProjectsHub.dismissOrphan",
+          "when": "false"
+        },
+        {
+          "command": "claudeProjectsHub.copyAutoMemory",
+          "when": "false"
         }
       ]
     }

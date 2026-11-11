@@ -4,7 +4,8 @@ import { scanClaudeData, type ProjectInfo } from "../core/claudeData.ts";
 import { readAutoMemory, type MemoryNote } from "../core/automemory.ts";
 import { resolveProject } from "../core/identity.ts";
 import { parseRef, topicFile } from "../core/paths.ts";
-import { pathKey, readRegistry } from "../core/registry.ts";
+import { emptyRegistry, pathKey, readRegistry, type Registry } from "../core/registry.ts";
+import { reconcile, type Proposal, type ReconcileResult } from "../core/relocate.ts";
 import { listTopics, type TopicEntry } from "../core/store.ts";
 import type { SessionSummary, SubagentInfo } from "../core/transcript.ts";
 
@@ -13,6 +14,10 @@ export interface Proj { info: ProjectInfo; id?: string; name: string }
 export type Node =
   | { kind: "project"; p: Proj; open?: boolean }
   | { kind: "temp"; items: Proj[] }
+  | { kind: "proposals"; items: Extract<Node, { kind: "proposal" }>[] }
+  | { kind: "proposal"; pr: Proposal; orphan: string; candidate: string }
+  | { kind: "orphans"; items: Extract<Node, { kind: "orphan" }>[] }
+  | { kind: "orphan"; id: string; name: string; claudeDirs: string[] }
   | { kind: "memory"; p: Proj; items: TopicEntry[] }
   | { kind: "auto"; p: Proj; items: MemoryNote[] }
   | { kind: "sessions"; p: Proj }
@@ -21,13 +26,15 @@ export type Node =
   | { kind: "session"; s: SessionSummary; p: Proj }
   | { kind: "subagent"; s: SessionSummary; a: SubagentInfo };
 
-interface Data { projects: Proj[]; temp: Proj[] }
+export interface Data { projects: Proj[]; temp: Proj[]; reg: Registry; reloc: ReconcileResult }
 
 /** Shared roots and memoized scan; `invalidate()` forces the next rescan. */
 export class Hub {
   readonly hubHome: string;
   readonly claudeHome: string;
   log: (msg: string) => void = () => {};
+  /** Called after each scan's reconciliation (§7.4). */
+  onReconcile: (r: ReconcileResult) => void = () => {};
   private data?: Promise<Data>;
   constructor(hubHome: string, claudeHome: string) { this.hubHome = hubHome; this.claudeHome = claudeHome; }
   get cachePath() { return join(this.hubHome, "cache", "sessions-v1.json"); }
@@ -37,8 +44,10 @@ export class Hub {
   private async load(): Promise<Data> {
     const t0 = Date.now();
     const { projects, sessions } = await scanClaudeData(this.claudeHome, { cachePath: this.cachePath });
-    const { reg } = await readRegistry(this.hubHome);
-    const out: Data = { projects: [], temp: [] };
+    let reloc: ReconcileResult = { merges: [], proposals: [], orphans: [] };
+    try { reloc = await reconcile(projects, { hubHome: this.hubHome, log: this.log }); } catch (e) { this.log(`rapprochement : ${(e as Error).message}`); }
+    const reg = (await readRegistry(this.hubHome).catch(() => ({ reg: emptyRegistry() }))).reg;
+    const out: Data = { projects: [], temp: [], reg, reloc };
     for (const info of projects) {
       const r = await resolveProject(info.cwd, { hubHome: this.hubHome });
       const id = r.status === "resolved" ? r.id : undefined;
@@ -48,6 +57,7 @@ export class Hub {
     const recent = (p: Proj) => p.info.sessions[0]?.mtimeMs ?? 0;
     out.projects.sort((a, b) => recent(b) - recent(a));
     this.log(`scan : ${projects.length} projets, ${sessions.length} sessions en ${Date.now() - t0} ms`);
+    this.onReconcile(reloc);
     return out;
   }
 }
@@ -85,6 +95,7 @@ export class TreeProvider implements vscode.TreeDataProvider<Node> {
     switch (n.kind) {
       case "project": return this.projectChildren(n.p);
       case "temp": return n.items.map((p) => ({ kind: "project", p }));
+      case "proposals": case "orphans": return n.items;
       case "memory": return n.items.map((entry) => ({ kind: "topic", entry, projectId: n.p.id }));
       case "auto": return n.items.map((note) => ({ kind: "note", note, p: n.p }));
       case "sessions": return n.p.info.sessions.map((s) => ({ kind: "session", s, p: n.p }));
@@ -99,12 +110,18 @@ export class TreeProvider implements vscode.TreeDataProvider<Node> {
   }
 
   private async roots(): Promise<Node[]> {
-    const { projects, temp } = await this.hub.get();
+    const { projects, temp, reg, reloc } = await this.hub.get();
     const ws = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     const open = ws ? projects.find((p) => pathKey(p.info.cwd) === pathKey(ws)) : undefined;
     const nodes: Node[] = [];
     if (open) nodes.push({ kind: "project", p: open, open: true });
     for (const p of projects) if (p !== open) nodes.push({ kind: "project", p });
+    const name = (id: string) => reg.projects[id]?.name ?? id;
+    const proposals = reloc.proposals.map((pr) => ({ kind: "proposal" as const, pr, orphan: name(pr.orphanId), candidate: name(pr.candidateId) }));
+    if (proposals.length) nodes.push({ kind: "proposals", items: proposals });
+    const proposed = new Set(reloc.proposals.map((x) => x.orphanId));
+    const orphans = reloc.orphans.filter((id) => !proposed.has(id)).map((id) => ({ kind: "orphan" as const, id, name: name(id), claudeDirs: reg.projects[id]?.claudeDirs ?? [] }));
+    if (orphans.length) nodes.push({ kind: "orphans", items: orphans });
     if (temp.length && vscode.workspace.getConfiguration("claudeProjectsHub").get<boolean>("showTemporaryProjects")) {
       nodes.push({ kind: "temp", items: temp });
     }
@@ -137,6 +154,18 @@ export class TreeProvider implements vscode.TreeDataProvider<Node> {
         return it;
       }
       case "temp": return mk(`Temporaires (${n.items.length})`, C.Collapsed, "temp");
+      case "proposals": return mk(`À rattacher (${n.items.length})`, C.Expanded, "proposals");
+      case "orphans": return mk(`Orphelins (${n.items.length})`, C.Collapsed, "orphans");
+      case "proposal": {
+        const it = mk(`${n.orphan} → ${n.candidate}`, C.None, "proposal");
+        it.description = n.pr.reason === "root-commit" ? "même historique git" : "même nom de dossier";
+        return it;
+      }
+      case "orphan": {
+        const it = mk(n.name, C.None, "orphan");
+        it.description = "dossier introuvable";
+        return it;
+      }
       case "memory": return mk(`Mémoire (${n.items.length})`, n.items.length ? C.Collapsed : C.None, "memoryGroup");
       case "auto": return mk(`Auto-mémoire Claude (${n.items.length})`, n.items.length ? C.Collapsed : C.None, "autoGroup");
       case "sessions": return mk(`Sessions (${n.p.info.sessions.length})`, C.Collapsed, "sessionsGroup");

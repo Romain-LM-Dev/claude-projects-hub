@@ -2,6 +2,8 @@ import * as vscode from "vscode";
 import { join } from "node:path";
 import { claudeHome, hubHome } from "../core/paths.ts";
 import { setupDiagnostics } from "./diagnostics.ts";
+import { registerPreview } from "./preview.ts";
+import { registerRelocation } from "./relocation.ts";
 import { registerResume } from "./resume.ts";
 import { openSession, SCHEME, SessionDocuments } from "./sessionDocument.ts";
 import { registerTopicCommands } from "./topicCommands.ts";
@@ -12,6 +14,7 @@ export function activate(context: vscode.ExtensionContext) {
   const projects = new TreeProvider(hub, "projects");
   const globalMemory = new TreeProvider(hub, "global");
   const refresh = () => { hub.invalidate(); projects.fire(); globalMemory.fire(); };
+  const reloc = registerRelocation(hub, refresh);
   const docs = new SessionDocuments(hub.claudeHome, (m) => hub.log(m));
 
   // Watcher events are coalesced: one refresh per 2 s window.
@@ -37,8 +40,10 @@ export function activate(context: vscode.ExtensionContext) {
     ...setupDiagnostics(hub),
     ...registerResume(),
     ...registerTopicCommands(hub, refresh),
+    ...reloc.disposables,
+    ...registerPreview(hub),
   );
-  return { projects, globalMemory };
+  return { projects, globalMemory, relocation: reloc.state };
 }
 
 export function deactivate(): void {}
