@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdtemp, readFile, rm, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -7,6 +8,18 @@ import { test } from 'node:test';
 import { withLock, writeFileAtomic } from './lock.ts';
 
 async function tmp() { return mkdtemp(join(tmpdir(), 'hub-lock-')); }
+
+test('lock in a folder denying writes: waits then fails with io, never spins forever', { skip: process.platform !== 'win32' }, async () => {
+  const d = await tmp();
+  const deny = () => execFileSync('icacls', [d, '/deny', '*S-1-1-0:(OI)(CI)(WD,AD)'], { stdio: 'ignore' });
+  const restore = () => execFileSync('icacls', [d, '/remove:d', '*S-1-1-0'], { stdio: 'ignore' });
+  deny();
+  try {
+    const t0 = Date.now();
+    await assert.rejects(withLock(join(d, 'f.md'), async () => {}, { timeoutMs: 200 }), { code: 'io' });
+    assert.ok(Date.now() - t0 >= 150, 'EPERM/EACCES is retried until the deadline');
+  } finally { restore(); await rm(d, { recursive: true }); }
+});
 
 test('lock is created then released, also on error', async () => {
   const d = await tmp();

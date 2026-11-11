@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { readAutoMemory } from './automemory.ts';
 
 test('auto-mémoire : frontmatter à plat et sous metadata', async () => {
@@ -15,4 +15,11 @@ test('auto-mémoire : frontmatter à plat et sous metadata', async () => {
 
 test('dossier absent : mémoire vide', async () => {
   assert.deepEqual(await readAutoMemory(join(import.meta.dirname, 'nope')), { notes: [] });
+});
+
+test('auto-mémoire : MemoryNote.file est le chemin complet', async () => {
+  const dir = join(import.meta.dirname, '../../test/fixtures/claude-home/projects/C--proj-a/memory');
+  const m = await readAutoMemory(dir);
+  assert.ok(m.notes.length > 0);
+  for (const n of m.notes) assert.equal(n.file, join(dir, basename(n.file)));
 });

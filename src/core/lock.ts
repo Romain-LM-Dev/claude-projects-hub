@@ -24,12 +24,14 @@ export async function withLock<T>(file: string, fn: () => Promise<T>, opts: Lock
       try { await h.writeFile(JSON.stringify({ pid: process.pid, at: new Date().toISOString() })); } finally { await h.close(); }
       break;
     } catch (e) {
-      if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw new HubError('io', `verrou impossible : ${(e as Error).message}`);
+      const code = (e as NodeJS.ErrnoException).code;
+      // Windows answers EPERM/EACCES while another process is deleting the lock: wait, as for EEXIST.
+      if (code !== 'EEXIST' && code !== 'EPERM' && code !== 'EACCES') throw new HubError('io', `verrou impossible : ${(e as Error).message}`);
     }
     try {
       // shortcut: two processes taking over the same stale lock can race, acceptable at 10 s staleness.
       if (Date.now() - (await stat(lockPath)).mtimeMs > staleMs) { await unlink(lockPath).catch(() => {}); continue; }
-    } catch { continue; } // lock vanished between open and stat: retry at once
+    } catch { /* lock vanished or unreadable: fall through, so the deadline still applies */ }
     if (Date.now() >= deadline) throw new HubError('io', `verrou occupé : ${lockPath}`);
     await sleep(25);
   }

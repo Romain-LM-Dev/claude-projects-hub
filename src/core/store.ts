@@ -108,7 +108,7 @@ export async function writeTopic(ctx: StoreCtx, ref: string, input: WriteInput):
   validate(fm, 'invalid_input');
   const body = lf(input.body);
   if (body.length > MAX_BODY) throw new HubError('too_large', `corps limité à ${MAX_BODY} caractères`);
-  assertNoSecret([fm.title, fm.summary, fm.tags.join(' '), body].join('\n'));
+  assertNoSecret([fm.title, fm.summary, fm.tags.join(' '), fm.importedFrom ?? '', body].join('\n'));
 
   return withLock(file, async () => {
     const old = await readBytes(file);

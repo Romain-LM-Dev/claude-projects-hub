@@ -215,7 +215,9 @@ Code), égal à `os.homedir()`, racine d'un lecteur, ou sous `CLAUDE_HOME` ou `H
 Un dossier exclu n'a jamais de marqueur ni d'entrée : seul le global est injecté et lu ; `project:` → `excluded`.
 
 1. Chercher `.claude/projects-hub.json` dans le dossier puis ses parents ; arrêt après un dossier contenant `.git`
-   (dossier ou fichier) ou à la racine du lecteur. Id valide trouvé → projet.
+   (dossier ou fichier) ou à la racine du lecteur. Id valide trouvé → projet. Un marqueur d'un PARENT ne compte que
+   si un dossier `.git` a été atteint au-dessus du dossier (on est dans un dépôt) ; hors dépôt, seul le marqueur du
+   dossier lui-même compte (une session dans `~/Documents` ne capture pas ses sous-dossiers).
 2. Sinon, projet du registre dont `paths` contient la clé du dossier → projet.
 3. Sinon : non enregistré.
 
@@ -286,7 +288,13 @@ marqueur déplacé → la session au nouveau dossier crée C (marqueur, sans top
 règle « certain » s'applique et réécrit le marqueur de C avec l'id de O.
 
 Commande « Détacher ce dossier » : retire P du projet, lui crée une identité neuve, réécrit son marqueur s'il en a
-un ; les topics restent au projet d'origine.
+un ; les topics restent au projet d'origine. Refusée (`invalid_input`, message « ce dossier n'est pas la racine
+d'un projet ») si P n'a pas son propre marqueur et qu'un marqueur d'un parent le résout : le scan suivant le rendrait
+au parent, et un marqueur posé dans un sous-dossier ne serait pas couvert par la ligne `info/exclude`.
+Un dossier mort du scan dont le cwd figure déjà dans `paths` ou `formerPaths` d'une entrée (entrée créée par le
+hook, sans `claudeDirs`) est rattaché à cette entrée (`claudeDirs`), jamais dupliqué en nouvel orphelin. Limite
+acceptée : un projet enregistré par le hook puis déplacé sans marqueur avant tout scan n'a pas d'empreinte ; il
+reste dans « Orphelins » (rattachement manuel).
 
 ### 7.5 Données Claude d'un orphelin rattaché
 - Transcripts : non déplacés ; affichés sous le projet rattaché. Reprise dans un terminal ouvert au nouveau
@@ -422,5 +430,6 @@ quand Node manque ; règle de permission posée par l'extension ; CI GitHub Acti
 | 2026-11-11 | j5 | §7.5 | limites de `copyAutoMemory` acceptées |
 | 2026-11-11 | j6 | §7.4 | aucun git sous le verrou du registre (code à changer) |
 | 2026-11-11 | a, b, h | ADR 0005, ADR 0001 | amendements datés |
+| 2026-11-11 | T11 | §7.3, §7.4 | revue finale : marqueur d'un parent seulement dans un dépôt git ; Détacher refusé hors racine ; dossier mort rattaché à l'entrée du hook (pas d'orphelin doublon) ; Annuler d'un passage à plusieurs fusions = un seul appel `undoMerge(hub, records[])` qui restaure le `.bak` une fois et inscrit tous les refus |
 | 2026-11-11 | o | §7.4 | Annuler durable : `.bak` pris juste avant la première fusion (C garde son id), C inscrit dans `O.dismissed` (défaut trouvé en T8 : le scan suivant refusionnait) |
 | 2026-11-11 | k, l, m | §5, §6.3 | date locale dans les lignes d'index ; `excluded` dans le type des codes ; format `tags: [a, b]` de `memory_read` ; `writeTopic` accepte `importedFrom` (import d'auto-mémoire) |

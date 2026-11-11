@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writ
 import { homedir, tmpdir } from 'node:os';
 import { join, parse } from 'node:path';
 import { test } from 'node:test';
-import { ensureProject, isExcludedDir, markerFile, resolveProject } from './identity.ts';
+import { ensureProject, findMarker, isExcludedDir, markerFile, resolveProject } from './identity.ts';
 import { readRegistry, registryFile } from './registry.ts';
 import { git, initRepo, sandbox } from '../../test/fixtures/kit.ts';
 
@@ -142,4 +142,30 @@ test('read-only folder: entry created, no marker, no exception', { skip: process
   } finally {
     icacls('/remove:d', '*S-1-1-0');
   }
+});
+
+test('review 7: a gitdir: target without HEAD gets no info/exclude', async () => {
+  const sb = sandbox();
+  const d = sb.dir('wt');
+  const target = join(sb.base, 'elsewhere');
+  writeFileSync(join(d, '.git'), 'gitdir: ../../elsewhere\n');
+  await ensureProject(d, { hubHome: sb.hub, git: false, exclude: sb.exclude });
+  assert.ok(!existsSync(join(target, 'info', 'exclude')));
+});
+
+test('review 8: a parent marker counts only inside a git repo; the own marker always counts', async () => {
+  const sb = sandbox();
+  const p = sb.dir('plain');
+  mkdirSync(join(p, '.claude'));
+  writeFileSync(markerFile(p), '{"id":"parent-id"}\n');
+  const c = join(p, 'child');
+  mkdirSync(join(c, '.claude'), { recursive: true });
+  assert.equal((await findMarker(c)).id, undefined);
+  writeFileSync(markerFile(c), '{"id":"own-id"}\n');
+  assert.equal((await findMarker(c)).id, 'own-id');
+  const r = initRepo(sb.dir('repo'));
+  mkdirSync(join(r, '.claude'));
+  writeFileSync(markerFile(r), '{"id":"repo-id"}\n');
+  mkdirSync(join(r, 'a', 'b'), { recursive: true });
+  assert.equal((await findMarker(join(r, 'a', 'b'))).id, 'repo-id');
 });

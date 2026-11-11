@@ -32,14 +32,18 @@ export async function readMarker(root: string): Promise<string | undefined> {
   } catch { return undefined; }
 }
 
-/** §7.3 step 1: marker in `dir` then parents, stopping after a folder holding `.git` or at the drive root. */
+/** §7.3 step 1: own marker always counts; a parent's marker only if the climb reaches a folder holding `.git` (we are in a repo). */
 export async function findMarker(dir: string): Promise<{ id?: string; last: string }> {
-  let d = resolve(dir);
+  const start = resolve(dir);
+  let d = start;
+  let parent: { id: string; last: string } | undefined;
   for (;;) {
     const id = await readMarker(d);
-    if (id) return { id, last: d };
+    if (id && d === start) return { id, last: d };
+    if (id) parent ??= { id, last: d };
     const up = dirname(d);
-    if (existsSync(join(d, '.git')) || up === d) return { last: d };
+    if (existsSync(join(d, '.git'))) return parent ?? { last: d };
+    if (up === d) return { last: d };
     d = up;
   }
 }
@@ -80,7 +84,9 @@ async function gitDirOf(root: string): Promise<string> {
 }
 
 async function addExcludeLine(root: string): Promise<void> {
-  const file = join(await gitDirOf(root), 'info', 'exclude');
+  const g = await gitDirOf(root);
+  if (!existsSync(join(g, 'HEAD'))) return; // unvalidated `gitdir:` target: never write there
+  const file = join(g, 'info', 'exclude');
   let text = '';
   try { text = await readFile(file, 'utf8'); } catch (e) { if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e; }
   if (text.split('\n').some((l) => l.replace(/\r/g, '').trim() === EXCLUDE_LINE)) return;

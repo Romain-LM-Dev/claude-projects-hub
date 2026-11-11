@@ -15,7 +15,12 @@ const env: NodeJS.ProcessEnv = { ...process.env, CLAUDE_PROJECTS_HUB_HOME: hub, 
 delete env.CLAUDE_PROJECT_DIR;
 mkdirSync(fakeTmp, { recursive: true });
 let n = 0;
-const proj = (git = true) => { const d = join(base, 'w', `p${n++}`); mkdirSync(git ? join(d, '.git') : d, { recursive: true }); return d; };
+const proj = (git = true) => {
+  const d = join(base, 'w', `p${n++}`);
+  mkdirSync(git ? join(d, '.git') : d, { recursive: true });
+  if (git) writeFileSync(join(d, '.git', 'HEAD'), 'ref: refs/heads/main\n'); // info/exclude is only written in a real git dir (§7.3)
+  return d;
+};
 
 before(async () => {
   await build({ entryPoints: [join(import.meta.dirname, 'main.ts')], outfile: bundle, bundle: true, platform: 'node', format: 'cjs', target: 'node20', logLevel: 'silent' });

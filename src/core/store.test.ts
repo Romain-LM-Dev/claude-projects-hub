@@ -123,3 +123,9 @@ test('concurrency: 2 child processes x 50 appends lose nothing', { timeout: 120_
   for (const tag of ['A', 'B']) for (let i = 0; i < 50; i++) assert.ok(body.includes(`\n${tag}-${i}`), `${tag}-${i}`);
   await done();
 });
+
+test('importedFrom is checked for secrets', async () => {
+  const { ctx, done } = await setup();
+  await assert.rejects(() => writeTopic(ctx, 'project:s', { ...input, importedFrom: `AKIA${'0'.repeat(16)}` }));
+  await done();
+});

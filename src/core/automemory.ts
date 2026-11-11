@@ -47,7 +47,7 @@ export async function readAutoMemory(memoryDir: string): Promise<AutoMemory> {
   for (const n of names.filter((x) => x.endsWith('.md')).sort()) {
     const text = await readFile(join(memoryDir, n), 'utf8');
     if (n === 'MEMORY.md') out.index = text;
-    else out.notes.push(parseNote(n, text));
+    else out.notes.push(parseNote(join(memoryDir, n), text));
   }
   return out;
 }

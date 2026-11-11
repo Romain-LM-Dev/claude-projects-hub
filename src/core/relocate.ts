@@ -50,29 +50,44 @@ async function backup(hub: string, raw: string | null): Promise<string> {
 }
 
 /** Moves topics of `absorbed` to `kept`; a taken slug gets `-<first 4 chars of absorbed id>`; nothing is overwritten. */
-async function moveTopics(hub: string, keptId: string, absorbedId: string): Promise<{ from: string; to: string }[]> {
+async function moveTopics(hub: string, keptId: string, absorbedId: string, moved: { from: string; to: string }[]): Promise<void> {
   const src = topicsDir(hub, 'project', absorbedId);
   const dst = topicsDir(hub, 'project', keptId);
-  const moved: { from: string; to: string }[] = [];
   let names: string[] = [];
-  try { names = await readdir(src); } catch { return moved; }
+  try { names = await readdir(src); } catch { return; }
   await mkdir(dst, { recursive: true });
   for (const n of names) {
     const slug = n.endsWith('.md') ? n.slice(0, -3) : '';
     if (!isValidSlug(slug)) continue;
-    let target = join(dst, n);
-    for (const len of [4, 8, 36]) {
-      if (!existsSync(target)) break;
+    const candidates = [join(dst, n), ...[4, 8, 36].map((len) => {
       const suffix = `-${absorbedId.slice(0, len)}`;
-      target = join(dst, `${slug.slice(0, 64 - suffix.length).replace(/-+$/, '')}${suffix}.md`);
+      return join(dst, `${slug.slice(0, 64 - suffix.length).replace(/-+$/, '')}${suffix}.md`);
+    })];
+    for (const target of candidates) {
+      // lock on the target: a concurrent writeTopic (same lock) is never overwritten
+      const done = await withLock(target, async () => {
+        if (existsSync(target)) return false;
+        await rename(join(src, n), target);
+        moved.push({ from: join(src, n), to: target });
+        return true;
+      });
+      if (done) break;
+      if (target === candidates[3]) throw new HubError('exists', `topic déjà présent : ${target}`);
     }
-    if (existsSync(target)) throw new HubError('exists', `topic déjà présent : ${target}`);
-    await rename(join(src, n), target);
-    moved.push({ from: join(src, n), to: target });
   }
   await rmdir(src).catch(() => {});
   await rmdir(join(src, '..')).catch(() => {});
-  return moved;
+}
+
+/** Puts markers back to `removedId` and moved topics back where they were (reverse order). Best effort. */
+async function restoreMoves(markers: string[], moved: { from: string; to: string }[], removedId: string, keptId?: string): Promise<void> {
+  for (const f of markers) {
+    const dir = join(f, '..', '..');
+    if (keptId === undefined || (await readMarker(dir)) === keptId) await writeFileAtomic(f, markerJson(removedId)).catch(() => {});
+  }
+  for (const t of [...moved].reverse()) {
+    if (existsSync(t.to) && !existsSync(t.from)) { await mkdir(join(t.from, '..'), { recursive: true }); await rename(t.to, t.from).catch(() => {}); }
+  }
 }
 
 /** Folds `absorbedId` into `keptId` inside `reg` (paths, claudeDirs, markers, topics). Caller holds the lock and made the .bak. */
@@ -80,10 +95,16 @@ async function mergeEntries(hub: string, reg: Registry, keptId: string, absorbed
   const k = reg.projects[keptId]!;
   const a = reg.projects[absorbedId]!;
   const markers: string[] = [];
-  for (const p of a.paths) {
-    if ((await readMarker(p)) === absorbedId) { await writeFileAtomic(markerFile(p), markerJson(keptId)); markers.push(markerFile(p)); }
+  const movedTopics: { from: string; to: string }[] = [];
+  try {
+    await moveTopics(hub, keptId, absorbedId, movedTopics);
+    for (const p of a.paths) {
+      if ((await readMarker(p)) === absorbedId) { await writeFileAtomic(markerFile(p), markerJson(keptId)); markers.push(markerFile(p)); }
+    }
+  } catch (e) {
+    await restoreMoves(markers, movedTopics, absorbedId);
+    throw e;
   }
-  const movedTopics = await moveTopics(hub, keptId, absorbedId);
   k.paths = union(k.paths, a.paths, pathKey);
   k.formerPaths = union(k.formerPaths, a.formerPaths, pathKey);
   k.claudeDirs = union(k.claudeDirs, a.claudeDirs, lower);
@@ -124,6 +145,9 @@ export async function reconcile(projects: ProjectInfo[], o: ReconcileOpts): Prom
     }
     for (const p of projects) {
       if (existsSync(p.cwd) || p.claudeDirs.some((d) => Object.values(E).some((e) => e.claudeDirs.some((x) => lower(x) === lower(d))))) continue;
+      const k = pathKey(p.cwd);
+      const same = Object.values(E).find((x) => x.paths.some((y) => pathKey(y) === k) || x.formerPaths.some((y) => pathKey(y) === k));
+      if (same) { same.claudeDirs = union(same.claudeDirs, p.claudeDirs, lower); continue; }
       const e = newEntry(p.cwd);
       e.git = null; e.formerPaths = [p.cwd]; e.claudeDirs = p.claudeDirs;
       E[randomUUID()] = e;
@@ -165,23 +189,22 @@ export async function reconcile(projects: ProjectInfo[], o: ReconcileOpts): Prom
   return result;
 }
 
-/** Cancels a merge: restores `registry.json.bak` and the markers (and topics moved by a manual attach). */
-export async function undoMerge(hubHome: string, rec: MergeRecord): Promise<void> {
+/** Cancels merges of ONE pass (same `.bak`): restores the registry once, records every refusal, restores markers and topics. */
+export async function undoMerge(hubHome: string, recs: MergeRecord | MergeRecord[]): Promise<void> {
+  const list = Array.isArray(recs) ? recs : [recs];
+  if (!list.length) return;
+  if (list.some((r) => r.backupRevision !== list[0]!.backupRevision)) throw new HubError('conflict', 'fusions de passes différentes : annulation séparée requise');
   await withLock(registryFile(hubHome), async () => {
     let bak: Buffer;
     try { bak = await readFile(registryBackup(hubHome)); } catch { throw new HubError('not_found', 'registry.json.bak introuvable'); }
-    if (revisionOf(bak) !== rec.backupRevision) throw new HubError('conflict', 'registry.json.bak a été réécrit depuis cette fusion : annulation impossible');
+    if (revisionOf(bak) !== list[0]!.backupRevision) throw new HubError('conflict', 'registry.json.bak a été réécrit depuis cette fusion : annulation impossible');
     const restored = JSON.parse(bak.toString('utf8')) as Registry;
-    const d = restored.projects[rec.keptId]?.dismissed; // the refused pair must not be merged again by the next scan
-    if (d && !d.includes(rec.removedId)) d.push(rec.removedId);
+    for (const rec of list) {
+      const d = restored.projects[rec.keptId]?.dismissed; // the refused pair must not be merged again by the next scan
+      if (d && !d.includes(rec.removedId)) d.push(rec.removedId);
+    }
     await writeFileAtomic(registryFile(hubHome), serializeRegistry(restored));
-    for (const f of rec.markers) {
-      const dir = join(f, '..', '..');
-      if ((await readMarker(dir)) === rec.keptId) await writeFileAtomic(f, markerJson(rec.removedId));
-    }
-    for (const t of rec.movedTopics.reverse()) {
-      if (existsSync(t.to) && !existsSync(t.from)) { await mkdir(join(t.from, '..'), { recursive: true }); await rename(t.to, t.from); }
-    }
+    for (const rec of [...list].reverse()) await restoreMoves(rec.markers, rec.movedTopics, rec.removedId, rec.keptId);
   });
 }
 
@@ -208,6 +231,7 @@ export async function detachDir(hubHome: string, dir: string): Promise<string> {
   return updateRegistry(hubHome, async (reg) => {
     const from = findByPath(reg, dir);
     if (!from) throw new HubError('not_found', `dossier non rattaché : ${dir}`);
+    if (!(await readMarker(dir)) && (await findMarker(dir)).id) throw new HubError('invalid_input', "ce dossier n'est pas la racine d'un projet");
     const k = pathKey(dir);
     const src = reg.projects[from]!;
     const id = randomUUID();
@@ -236,9 +260,10 @@ export async function copyAutoMemory(claudeHome: string, fromClaudeDir: string, 
   const copied: string[] = [];
   if (mem.notes.length || mem.index) await mkdir(dstDir, { recursive: true });
   for (const n of mem.notes) {
-    if (existsSync(join(dstDir, n.file))) continue;
-    await copyFile(join(srcDir, n.file), join(dstDir, n.file));
-    copied.push(n.file);
+    const f = basename(n.file);
+    if (existsSync(join(dstDir, f))) continue;
+    await copyFile(join(srcDir, f), join(dstDir, f));
+    copied.push(f);
   }
   let indexLinesAdded = 0;
   if (mem.index) {
