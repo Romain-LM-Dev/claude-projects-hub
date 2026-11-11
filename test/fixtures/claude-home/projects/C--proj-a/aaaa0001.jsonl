@@ -1,0 +1,12 @@
+{"type":"session-owner","sessionId":"aaaa0001"}
+{"type":"user","isSidechain":false,"cwd":"C:\\proj\\a","gitBranch":"main","version":"9.9.9","entrypoint":"cli","sessionId":"aaaa0001","timestamp":"2026-01-01T10:00:00.000Z","message":{"role":"user","content":[{"type":"text","text":"<ide_opened_file>x</ide_opened_file>"}]}}
+{"type":"user","isSidechain":false,"cwd":"C:\\proj\\a","timestamp":"2026-01-01T10:00:01.000Z","message":{"role":"user","content":"Premier prompt reel"}}
+ceci n'est pas du JSON
+{"type":"type-futur-inconnu","x":1}
+{"type":"user","isSidechain":true,"cwd":"C:\\ailleurs","timestamp":"2026-01-01T10:00:02.000Z","message":{"role":"user","content":"prompt de sous-agent ignore"}}
+{"type":"ai-title","aiTitle":"Titre IA","sessionId":"aaaa0001"}
+{"type":"last-prompt","lastPrompt":"Dernier prompt","sessionId":"aaaa0001"}
+{"type":"custom-title","customTitle":"Titre perso","sessionId":"aaaa0001"}
+{"type":"cost-state","sessionId":"aaaa0001","totalCostUSD":0.5}
+{"type":"cost-state","sessionId":"aaaa0001","totalCostUSD":1.25}
+{"type":"assistant","timestamp":"2026-01-01T10:05:00.000Z","message":{"role":"assistant","content":[{"type":"thinking","thinking":"secret"},{"type":"text","text":"Reponse avec ``` clos"},{"type":"tool_use","name":"Read","input":{"file_path":"/x"}}]}}

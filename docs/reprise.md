@@ -1,4 +1,4 @@
-# Point de reprise (état au 2026-11-06)
+# Point de reprise (état au 2026-11-11)
 
 ## État
 | Élément | État |
@@ -6,7 +6,10 @@
 | Conception | faite : `docs/architecture.md`, ADR 0001 à 0006 (0003 révisé le 2026-11-06), `docs/plan.md` (T0 à T11) |
 | Vague 1 : T0 socle | fait : `npm install`, `typecheck`, `build`, `test` -> code 0 ; `git init -b main` |
 | Vague 1 : T0b équipe | fait : `CLAUDE.md`, `.claude/settings.json` (agent = orchestrateur), sept agents, frontmatter vérifié |
-| Non lancés | `test:ext`, `probe`, `package` : déclarés, fichiers d'entrée `test/extension/run.ts` et `scripts/probe.ts` à créer par leurs propriétaires |
+| Vague 2 : T1 magasin | fait (non commité) : `src/core/{paths,frontmatter,lock,store,secrets}.ts` + tests ; vérifié 2026-11-11 |
+| Vague 2 : T2 données Claude | fait (non commité) : `src/core/{transcript,claudeData,sessionCache,automemory}.ts` + tests, `test/fixtures/claude-home/`, `scripts/probe.ts` ; vérifié 2026-11-11 |
+| Vérifié 2026-11-11 | `npm test` -> 39/39, code 0 ; `npm run typecheck` -> code 0 ; `npm run probe` -> 15 dossiers Claude, 13 projets, 72 sessions, 279 sous-agents, 0 ligne illisible, 18,80 Mo lus, froid 451 ms, cache 20 ms |
+| Non lancés | `test:ext`, `package` : déclarés, `test/extension/run.ts` à créer par dev-vscode |
 | Sorties du build | `dist/extension.js`, `claude-plugin/projects-hub/dist/hook.js`, `claude-plugin/projects-hub/dist/mcp.js` |
 
 ## Décisions de l'utilisateur
@@ -16,13 +19,14 @@
 - Publisher `romain-lm-dev`, displayName « Projects Hub for Claude Code ».
 - Règle `mcp__plugin_projects-hub_hub` ajoutée à `~/.claude/settings.json` par l'agent global config-claude après T6 (préfixe vérifié), jamais par l'équipe.
 
-## Prochaine vague (vague 2, voir « Ordre et parallélisme » de `docs/plan.md`)
+## Prochaine vague (vague 3, voir « Ordre et parallélisme » de `docs/plan.md`)
 | Tâche | Agent | Objet |
 |---|---|---|
-| T1 | dev-core | magasin |
-| T2 | dev-core (2e instance) | lecture des données Claude |
+| T3 | dev-core | identité et relocalisation (réutilise `withLock` et `writeFileAtomic` de `lock.ts`, remplace la résolution de `CLAUDE_HOME` dupliquée dans `scripts/probe.ts`) |
 
-Puis la suite du plan. Fin de chantier : qa-reviewer, puis documentaliste si une commande ou un contrat change.
+Puis la suite du plan. Session lancée depuis le dossier parent : les agents du projet ne sont pas chargés ;
+lancer la session dans `claude-projects-hub` (ou déléguer à `team-for-every-project:developpeur` avec les règles
+de l'agent du projet dans le brief). Fin de chantier : qa-reviewer, puis documentaliste si une commande ou un contrat change.
 
 ## Points ouverts
 | # | Sujet | Qui |
@@ -31,6 +35,11 @@ Puis la suite du plan. Fin de chantier : qa-reviewer, puis documentaliste si une
 | b | typescript ^7.0.2 et @types/node ^26.6.6 non épinglés par l'ADR 0001 | architecte tranche |
 | c | À confirmer en exécution : préfixe réel des outils MCP (T6), forme exec du hook (T6), `claude --resume` depuis un autre dossier (T9), propagation de `info/exclude` dans un worktree (T3) | agents des tâches |
 | d | Conséquence acceptée : deux clones vivants = deux projets distincts (rattachement manuel) | - |
+| e | Choix de T1 hors contrat : `project:` sans id de projet -> `invalid_input` ; `baseRevision` sur topic absent -> `not_found` ; date d'ajout `YYYY-MM-DDTHH:MMZ` | architecte valide |
+| f | Réglé le 2026-11-11 : titre personnalisé = `{"type":"custom-title","customTitle":…,"sessionId":…}`, observé après `/rename` et lu par la sonde (`"custom":1`) | - |
+| g | Budget « < 20 Mo lus » fixé pour 38 sessions ; à 72 sessions on lit 18,80 Mo : le reformuler par session (≈ 320 Kio max) | architecte |
+| h | Avertissement Node `MODULE_TYPELESS_PACKAGE_JSON` à chaque test ; ne PAS ajouter `"type": "module"` sans passer les bundles CJS en `.cjs` (casserait `dist/extension.js`) | dev-vscode, architecte |
+| i | Course possible si deux processus reprennent le même verrou périmé (> 10 s) : accepté, commentaire `shortcut` dans `lock.ts` | - |
 
 ## Risques
 - Format JSONL interne de Claude, changeant : sonde `npm run probe`.
