@@ -6,9 +6,10 @@
 | Conception | faite : `docs/architecture.md`, ADR 0001 à 0006 (0003 révisé le 2026-11-06), `docs/plan.md` (T0 à T11) |
 | Vague 1 : T0 socle | fait : `npm install`, `typecheck`, `build`, `test` -> code 0 ; `git init -b main` |
 | Vague 1 : T0b équipe | fait : `CLAUDE.md`, `.claude/settings.json` (agent = orchestrateur), sept agents, frontmatter vérifié |
-| Vague 2 : T1 magasin | fait (non commité) : `src/core/{paths,frontmatter,lock,store,secrets}.ts` + tests ; vérifié 2026-11-11 |
-| Vague 2 : T2 données Claude | fait (non commité) : `src/core/{transcript,claudeData,sessionCache,automemory}.ts` + tests, `test/fixtures/claude-home/`, `scripts/probe.ts` ; vérifié 2026-11-11 |
-| Vérifié 2026-11-11 | `npm test` -> 39/39, code 0 ; `npm run typecheck` -> code 0 ; `npm run probe` -> 15 dossiers Claude, 13 projets, 72 sessions, 279 sous-agents, 0 ligne illisible, 18,80 Mo lus, froid 451 ms, cache 20 ms |
+| Vague 2 : T1 magasin | fait, commit `4d3ad81` (branche `feat/noyau`) : `src/core/{paths,frontmatter,lock,store,secrets}.ts` + tests |
+| Vague 2 : T2 données Claude | fait, commit `4d3ad81` : `src/core/{transcript,claudeData,sessionCache,automemory}.ts` + tests, `test/fixtures/claude-home/`, `scripts/probe.ts` |
+| Vague 3 : T3 identité | fait (branche `feat/noyau`) : `src/core/{git,registry,identity,relocate}.ts` + tests, `test/fixtures/kit.ts` ; `claudeHome(env)` ajouté à `paths.ts` et utilisé par la sonde |
+| Vérifié 2026-11-11 | `npm test` -> 56/56, 0 skip, code 0 ; `npm run typecheck` -> code 0 ; `npm run probe` -> 15 dossiers Claude, 13 projets, 72 sessions, 279 sous-agents, 0 ligne illisible, 18,80 Mo lus, froid 487 ms, cache 18 ms |
 | Non lancés | `test:ext`, `package` : déclarés, `test/extension/run.ts` à créer par dev-vscode |
 | Sorties du build | `dist/extension.js`, `claude-plugin/projects-hub/dist/hook.js`, `claude-plugin/projects-hub/dist/mcp.js` |
 
@@ -19,10 +20,14 @@
 - Publisher `romain-lm-dev`, displayName « Projects Hub for Claude Code ».
 - Règle `mcp__plugin_projects-hub_hub` ajoutée à `~/.claude/settings.json` par l'agent global config-claude après T6 (préfixe vérifié), jamais par l'équipe.
 
-## Prochaine vague (vague 3, voir « Ordre et parallélisme » de `docs/plan.md`)
+## Prochaine vague (vague 4, voir « Ordre et parallélisme » de `docs/plan.md`)
 | Tâche | Agent | Objet |
 |---|---|---|
-| T3 | dev-core | identité et relocalisation (réutilise `withLock` et `writeFileAtomic` de `lock.ts`, remplace la résolution de `CLAUDE_HOME` dupliquée dans `scripts/probe.ts`) |
+| T4 | dev-claude | hook SessionStart (`ensureProject(dir, {hubHome, git:false, lockTimeoutMs:500, log})`, puis `buildInjection`) |
+| T5 | dev-claude (2e instance) | serveur MCP (`resolveProject`, store, `ensureProject(..., {git:true})` avant une écriture `project:`) |
+| T7 | dev-vscode | vues, sessions, topics (`scanClaudeData`, `renderSessionPage`, store) |
+
+Avant la vague 4 : l'architecte tranche les points e, g et j (ils touchent les contrats utilisés par T4, T5, T7).
 
 Puis la suite du plan. Session lancée depuis le dossier parent : les agents du projet ne sont pas chargés ;
 lancer la session dans `claude-projects-hub` (ou déléguer à `team-for-every-project:developpeur` avec les règles
@@ -40,6 +45,7 @@ de l'agent du projet dans le brief). Fin de chantier : qa-reviewer, puis documen
 | g | Budget « < 20 Mo lus » fixé pour 38 sessions ; à 72 sessions on lit 18,80 Mo : le reformuler par session (≈ 320 Kio max) | architecte |
 | h | Avertissement Node `MODULE_TYPELESS_PACKAGE_JSON` à chaque test ; ne PAS ajouter `"type": "module"` sans passer les bundles CJS en `.cjs` (casserait `dist/extension.js`) | dev-vscode, architecte |
 | i | Course possible si deux processus reprennent le même verrou périmé (> 10 s) : accepté, commentaire `shortcut` dans `lock.ts` | - |
+| j | Écarts de T3 au §7 : (1) « Ignorer l'orphelin » stocké en mettant l'id de l'orphelin dans son propre `dismissed` (aucun champ prévu) ; (2) marqueur trouvé dans un parent sans `.git` -> racine = dossier du marqueur (§7.3 dit « sinon dir ») ; (3) `ensureProject` ne retire pas un chemin disparu (le scan le fait) ; (4) un `.bak` par passage de `reconcile`, Annuler défait toutes les fusions du passage ; (5) `copyAutoMemory` ne lit que `claudeHome/settings.json` pour `autoMemoryDirectory`, casse `C-`/`c-` de la cible non gérée ; (6) empreintes calculées hors verrou : un projet créé pendant le scan attend le scan suivant | architecte tranche |
 
 ## Risques
 - Format JSONL interne de Claude, changeant : sonde `npm run probe`.
