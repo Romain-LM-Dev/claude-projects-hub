@@ -2,7 +2,7 @@
   "name": "claude-projects-hub",
   "displayName": "Projects Hub for Claude Code",
   "description": "Hub de projets et de topics pour Claude Code.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "romain-lm-dev",
   "private": true,
   "repository": {
@@ -109,6 +109,11 @@
       {
         "command": "claudeProjectsHub.copyAutoMemory",
         "title": "Copier l'auto-mémoire",
+        "category": "Claude Hub"
+      },
+      {
+        "command": "claudeProjectsHub.deleteSessions",
+        "title": "Supprimer la session…",
         "category": "Claude Hub"
       },
       {
@@ -234,6 +239,21 @@
         {
           "command": "claudeProjectsHub.copyAutoMemory",
           "when": "viewItem == orphan"
+        },
+        {
+          "command": "claudeProjectsHub.deleteSessions",
+          "when": "viewItem == session",
+          "group": "z_danger"
+        },
+        {
+          "command": "claudeProjectsHub.deleteSessions",
+          "when": "viewItem == project",
+          "group": "z_danger"
+        },
+        {
+          "command": "claudeProjectsHub.deleteSessions",
+          "when": "viewItem == orphan",
+          "group": "z_danger"
         }
       ],
       "commandPalette": [
@@ -255,6 +275,10 @@
         },
         {
           "command": "claudeProjectsHub.copyAutoMemory",
+          "when": "false"
+        },
+        {
+          "command": "claudeProjectsHub.deleteSessions",
           "when": "false"
         }
       ]

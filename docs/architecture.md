@@ -32,7 +32,7 @@ VS Code ── extension.js ──┐                      ┌── hook.js (Se
 ## 3. Emplacements
 
 - `CLAUDE_HOME` = `$CLAUDE_CONFIG_DIR` sinon `~/.claude`. Lecture seule, sauf la copie d'auto-mémoire confirmée
-  par l'utilisateur (§7.5).
+  par l'utilisateur (§7.5) et la mise à la corbeille de sessions confirmée (ADR 0007, §10).
 - `HUB_HOME` = `$CLAUDE_PROJECTS_HUB_HOME` sinon `~/.claude-projects-hub` (la variable sert aux tests).
 
 ```
@@ -379,7 +379,8 @@ Conteneur « Claude Hub » dans la barre d'activité, deux vues :
   version.
 - **Mémoire globale** : topics globaux.
 Clic sur un topic : ouvre le fichier `.md` dans l'éditeur. Clic sur une session : document de session (§8.4).
-Commandes : Rafraîchir, Nouveau topic, Supprimer le topic (corbeille), Importer en topic (souvenir d'auto-mémoire →
+Commandes : Rafraîchir, Nouveau topic, Supprimer le topic (corbeille), Supprimer la session… (corbeille, sélection
+multiple, ou toutes les sessions d'un projet ou d'un orphelin ; ADR 0007), Importer en topic (souvenir d'auto-mémoire →
 topic projet ou global), Reprendre dans Claude (`vscode://anthropic.claude-code/open?session=<id>`), Reprendre dans
 un terminal (cwd = dossier vivant du projet, `claude --resume <id>`), Ouvrir le dossier, Rattacher à un projet…,
 Détacher ce dossier, Copier l'auto-mémoire, Rafraîchir les empreintes, Aperçu de l'injection, Installer / Retirer
@@ -407,8 +408,9 @@ par la cible par session (point g).
   projet. Garde-fous : consigne dans l'en-tête et les descriptions, détection de secrets (§4.4), topics visibles et
   modifiables dans VS Code.
 - Le contenu des transcripts n'est jamais interprété comme du Markdown actif ni du HTML (blocs de code).
-- Seules écritures hors `HUB_HOME` : le marqueur du projet et sa ligne dans `info/exclude` du dépôt (§7.3), et la
-  copie d'auto-mémoire confirmée (§7.5).
+- Seules écritures hors `HUB_HOME` : le marqueur du projet et sa ligne dans `info/exclude` du dépôt (§7.3), la
+  copie d'auto-mémoire confirmée (§7.5), et la mise à la corbeille de sessions confirmée (ADR 0007 : jamais de
+  suppression définitive, jamais une session vivante, chemins confinés sous `CLAUDE_HOME`).
 
 ## 13. Reporté (hors v1)
 Injection dans les sous-agents (SubagentStart) ; rappel par UserPromptSubmit ; outil de suppression pour Claude ;
@@ -430,6 +432,7 @@ quand Node manque ; règle de permission posée par l'extension ; CI GitHub Acti
 | 2026-11-11 | j5 | §7.5 | limites de `copyAutoMemory` acceptées |
 | 2026-11-11 | j6 | §7.4 | aucun git sous le verrou du registre (code à changer) |
 | 2026-11-11 | a, b, h | ADR 0005, ADR 0001 | amendements datés |
+| 2026-11-11 | 0.2 | §3, §10, §12, ADR 0007 | suppression de sessions : mise à la corbeille du transcript, du dossier de session, de `file-history/<id>` et `session-env/<id>`, sur confirmation, jamais pour une session vivante |
 | 2026-11-11 | T11 | §7.3, §7.4 | revue finale : marqueur d'un parent seulement dans un dépôt git ; Détacher refusé hors racine ; dossier mort rattaché à l'entrée du hook (pas d'orphelin doublon) ; Annuler d'un passage à plusieurs fusions = un seul appel `undoMerge(hub, records[])` qui restaure le `.bak` une fois et inscrit tous les refus |
 | 2026-11-11 | o | §7.4 | Annuler durable : `.bak` pris juste avant la première fusion (C garde son id), C inscrit dans `O.dismissed` (défaut trouvé en T8 : le scan suivant refusionnait) |
 | 2026-11-11 | k, l, m | §5, §6.3 | date locale dans les lignes d'index ; `excluded` dans le type des codes ; format `tags: [a, b]` de `memory_read` ; `writeTopic` accepte `importedFrom` (import d'auto-mémoire) |

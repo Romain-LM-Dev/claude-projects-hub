@@ -6,6 +6,7 @@ import { registerPreview } from "./preview.ts";
 import { registerRelocation } from "./relocation.ts";
 import { registerInstall } from "./install.ts";
 import { registerResume } from "./resume.ts";
+import { registerSessionDelete } from "./sessionDelete.ts";
 import { openSession, SCHEME, SessionDocuments } from "./sessionDocument.ts";
 import { registerTopicCommands } from "./topicCommands.ts";
 import { Hub, TreeProvider } from "./tree.ts";
@@ -28,7 +29,7 @@ export function activate(context: vscode.ExtensionContext) {
   };
 
   context.subscriptions.push(
-    vscode.window.createTreeView("claudeProjectsHub.projects", { treeDataProvider: projects }),
+    vscode.window.createTreeView("claudeProjectsHub.projects", { treeDataProvider: projects, canSelectMany: true }),
     vscode.window.createTreeView("claudeProjectsHub.globalMemory", { treeDataProvider: globalMemory }),
     vscode.workspace.registerTextDocumentContentProvider(SCHEME, docs),
     vscode.languages.registerDocumentLinkProvider({ scheme: SCHEME }, docs),
@@ -40,6 +41,7 @@ export function activate(context: vscode.ExtensionContext) {
     { dispose: () => clearTimeout(timer) },
     ...setupDiagnostics(hub),
     ...registerResume(),
+    ...registerSessionDelete(hub, refresh),
     ...registerInstall(context, hub.hubHome),
     ...registerTopicCommands(hub, refresh),
     ...reloc.disposables,

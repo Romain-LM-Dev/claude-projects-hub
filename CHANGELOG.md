@@ -1,5 +1,9 @@
 # Journal des modifications
 
+## 0.2.0 - 2026-11-11
+
+- Ajouté : commande « Supprimer la session… » (sélection multiple, projet ou orphelin) : fichiers de la session mis à la corbeille après confirmation, jamais une session ouverte (ADR 0007).
+
 ## 0.1.0 - 2026-11-11
 
 Première version fonctionnelle (extension et plugin), après la revue finale T11 (`docs/recette-t11.md`).

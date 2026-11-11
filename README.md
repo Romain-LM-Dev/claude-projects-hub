@@ -71,7 +71,7 @@ L'extension ne modifie jamais ce fichier.
 ## Commandes
 
 Toutes sont de catégorie « Claude Hub ». « Rattacher à un projet… », « Détacher ce dossier », « Ignorer ce candidat »,
-« Ignorer l'orphelin » et « Copier l'auto-mémoire » n'existent que dans les menus contextuels des vues, pas dans la
+« Ignorer l'orphelin », « Copier l'auto-mémoire » et « Supprimer la session… » n'existent que dans les menus contextuels des vues, pas dans la
 palette de commandes.
 
 | Commande | Rôle |
@@ -89,6 +89,7 @@ palette de commandes.
 | Ignorer l'orphelin | masque l'orphelin ; il reste rattachable à la main |
 | Annuler le dernier rattachement | défait les fusions automatiques du dernier scan ; elles ne sont pas refaites au scan suivant |
 | Copier l'auto-mémoire | copie, après confirmation, l'auto-mémoire Claude vers le nouveau dossier ; rien n'est écrasé |
+| Supprimer la session… | met à la corbeille, après confirmation, les fichiers des sessions sélectionnées (ou d'un projet / orphelin) ; jamais une session ouverte |
 | Rafraîchir les empreintes | recalcule les empreintes git des projets |
 | Aperçu de l'injection | montre le texte que le hook injecte pour ce projet |
 | Installer l'intégration Claude | installe le plugin (voir Installation) |
