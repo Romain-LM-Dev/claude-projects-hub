@@ -12,7 +12,7 @@ import {
   findByPath, newEntry, pathKey, readRegistry, registryBackup, registryFile, serializeRegistry, emptyRegistry,
   updateRegistry, type ProjectEntry, type Registry,
 } from './registry.ts';
-import { listTopics } from './store.ts';
+import { listTopics, revisionOf } from './store.ts';
 
 export interface MergeRecord {
   keptId: string;
@@ -21,6 +21,8 @@ export interface MergeRecord {
   /** Marker files rewritten from `removedId` to `keptId`. */
   markers: string[];
   movedTopics: { from: string; to: string }[];
+  /** Revision of the `.bak` written by this pass; `undoMerge` refuses if the `.bak` changed since. */
+  backupRevision: string;
 }
 export interface Proposal { orphanId: string; candidateId: string; reason: 'root-commit' | 'same-name' }
 export interface ReconcileResult { merges: MergeRecord[]; proposals: Proposal[]; orphans: string[] }
@@ -40,9 +42,11 @@ const union = (a: string[], b: string[], key: (s: string) => string) => {
 const lower = (s: string) => s.toLowerCase();
 const markerJson = (id: string) => JSON.stringify({ id }) + '\n';
 
-async function backup(hub: string, raw: string | null): Promise<void> {
+async function backup(hub: string, raw: string | null): Promise<string> {
   await mkdir(hub, { recursive: true });
-  await writeFileAtomic(registryBackup(hub), raw ?? serializeRegistry(emptyRegistry()));
+  const content = raw ?? serializeRegistry(emptyRegistry());
+  await writeFileAtomic(registryBackup(hub), content);
+  return revisionOf(Buffer.from(content));
 }
 
 /** Moves topics of `absorbed` to `kept`; a taken slug gets `-<first 4 chars of absorbed id>`; nothing is overwritten. */
@@ -72,7 +76,7 @@ async function moveTopics(hub: string, keptId: string, absorbedId: string): Prom
 }
 
 /** Folds `absorbedId` into `keptId` inside `reg` (paths, claudeDirs, markers, topics). Caller holds the lock and made the .bak. */
-async function mergeEntries(hub: string, reg: Registry, keptId: string, absorbedId: string): Promise<MergeRecord> {
+async function mergeEntries(hub: string, reg: Registry, keptId: string, absorbedId: string, backupRevision: string): Promise<MergeRecord> {
   const k = reg.projects[keptId]!;
   const a = reg.projects[absorbedId]!;
   const markers: string[] = [];
@@ -85,7 +89,7 @@ async function mergeEntries(hub: string, reg: Registry, keptId: string, absorbed
   k.claudeDirs = union(k.claudeDirs, a.claudeDirs, lower);
   if (!k.git && a.git) k.git = a.git;
   delete reg.projects[absorbedId];
-  return { keptId, keptName: k.name, removedId: absorbedId, markers, movedTopics };
+  return { keptId, keptName: k.name, removedId: absorbedId, markers, movedTopics, backupRevision };
 }
 
 const shareRoot = (a: ProjectEntry, b: ProjectEntry) => !!a.git && !!b.git && a.git.rootCommits.some((c) => b.git!.rootCommits.includes(c));
@@ -100,6 +104,10 @@ export async function reconcile(projects: ProjectInfo[], o: ReconcileOpts): Prom
   for (const p of live) {
     const id = findByPath(known, p.cwd);
     if (!id || !('git' in known.projects[id]!)) await need(p.cwd);
+  }
+  for (const e of Object.values(known.projects)) {
+    const d = e.paths.find((x) => existsSync(x));
+    if (d && !('git' in e)) await need(d);
   }
   const result: ReconcileResult = { merges: [], proposals: [], orphans: [] };
 
@@ -123,10 +131,12 @@ export async function reconcile(projects: ProjectInfo[], o: ReconcileOpts): Prom
     for (const e of Object.values(E)) {
       const gone = e.paths.filter((x) => !existsSync(x));
       if (gone.length) { e.paths = e.paths.filter((x) => existsSync(x)); e.formerPaths = union(e.formerPaths, gone, pathKey); }
-      if (e.paths.length && !('git' in e)) e.git = await need(e.paths[0]!);
+      // no git under the lock: an entry without a precomputed fingerprint waits for the next scan
+      const f = e.paths.length ? fps.get(pathKey(e.paths[0]!)) : undefined;
+      if (f !== undefined && !('git' in e)) e.git = f;
     }
 
-    let saved = false;
+    let rev: string | undefined;
     const orphanIds = () => Object.keys(E).filter((id) => !E[id]!.paths.length && !E[id]!.dismissed.includes(id));
     for (const oid of orphanIds()) {
       const O = E[oid]!;
@@ -137,8 +147,8 @@ export async function reconcile(projects: ProjectInfo[], o: ReconcileOpts): Prom
         if (shareRoot(O, C) && O.git!.remote === C.git!.remote && !(await listTopics({ hubHome: o.hubHome, projectId: cid }, 'project')).length) certain.push(cid);
       }
       if (certain.length === 1) {
-        if (!saved) { await backup(o.hubHome, raw); saved = true; }
-        const rec = await mergeEntries(o.hubHome, reg, oid, certain[0]!);
+        rev ??= await backup(o.hubHome, raw);
+        const rec = await mergeEntries(o.hubHome, reg, oid, certain[0]!, rev);
         result.merges.push(rec);
         o.log?.(`Projet ${rec.keptName} rattaché à son nouveau dossier`);
         continue;
@@ -157,10 +167,11 @@ export async function reconcile(projects: ProjectInfo[], o: ReconcileOpts): Prom
 
 /** Cancels a merge: restores `registry.json.bak` and the markers (and topics moved by a manual attach). */
 export async function undoMerge(hubHome: string, rec: MergeRecord): Promise<void> {
-  let bak: string;
-  try { bak = await readFile(registryBackup(hubHome), 'utf8'); } catch { throw new HubError('not_found', 'registry.json.bak introuvable'); }
   await withLock(registryFile(hubHome), async () => {
-    await writeFileAtomic(registryFile(hubHome), bak);
+    let bak: Buffer;
+    try { bak = await readFile(registryBackup(hubHome)); } catch { throw new HubError('not_found', 'registry.json.bak introuvable'); }
+    if (revisionOf(bak) !== rec.backupRevision) throw new HubError('conflict', 'registry.json.bak a été réécrit depuis cette fusion : annulation impossible');
+    await writeFileAtomic(registryFile(hubHome), bak.toString('utf8'));
     for (const f of rec.markers) {
       const dir = join(f, '..', '..');
       if ((await readMarker(dir)) === rec.keptId) await writeFileAtomic(f, markerJson(rec.removedId));
@@ -176,8 +187,7 @@ export async function attachProject(hubHome: string, keptId: string, absorbedId:
   if (keptId === absorbedId) throw new HubError('invalid_input', 'rattachement d\'un projet à lui-même');
   return updateRegistry(hubHome, async (reg, raw) => {
     if (!reg.projects[keptId] || !reg.projects[absorbedId]) throw new HubError('not_found', 'projet inconnu');
-    await backup(hubHome, raw);
-    return mergeEntries(hubHome, reg, keptId, absorbedId);
+    return mergeEntries(hubHome, reg, keptId, absorbedId, await backup(hubHome, raw));
   });
 }
 

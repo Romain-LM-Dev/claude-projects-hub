@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 export type ErrorCode =
   | 'invalid_ref' | 'invalid_input' | 'not_found' | 'exists' | 'conflict'
-  | 'too_large' | 'secret_detected' | 'invalid_file' | 'io';
+  | 'too_large' | 'secret_detected' | 'invalid_file' | 'io' | 'excluded';
 
 /** Error carrying an architecture §5 code; `currentRevision` is set for `conflict`. */
 export class HubError extends Error {

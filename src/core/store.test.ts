@@ -77,6 +77,13 @@ test('write keeps unknown keys and importedFrom', async () => {
   await done();
 });
 
+test('write records importedFrom given by the caller', async () => {
+  const { ctx, done } = await setup();
+  await writeTopic(ctx, 'global:imp', { ...input, importedFrom: 'C:\\mem\\note.md' });
+  assert.equal((await readTopic(ctx, 'global:imp')).importedFrom, 'C:\\mem\\note.md');
+  await done();
+});
+
 test('invalid file: listed as invalid, never rewritten', async () => {
   const { ctx, done } = await setup();
   const dir = join(ctx.hubHome, 'global', 'topics');

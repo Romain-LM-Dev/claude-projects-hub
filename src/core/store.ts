@@ -33,6 +33,8 @@ export interface WriteInput {
   body: string;
   tags?: string[];
   baseRevision?: string;
+  /** Path of the imported auto-memory note (§4.2); kept from the previous file when omitted. */
+  importedFrom?: string;
 }
 
 export const revisionOf = (bytes: Buffer): string => createHash('sha256').update(bytes).digest('hex').slice(0, 12);
@@ -102,7 +104,7 @@ export async function listTopics(ctx: StoreCtx, scope: Scope | 'all' = 'all'): P
  */
 export async function writeTopic(ctx: StoreCtx, ref: string, input: WriteInput): Promise<{ ref: string; revision: string; created: boolean }> {
   const file = locate(ctx, ref);
-  const fm: Frontmatter = { title: input.title, summary: input.summary, tags: input.tags ?? [], extra: [] };
+  const fm: Frontmatter = { title: input.title, summary: input.summary, tags: input.tags ?? [], importedFrom: input.importedFrom, extra: [] };
   validate(fm, 'invalid_input');
   const body = lf(input.body);
   if (body.length > MAX_BODY) throw new HubError('too_large', `corps limité à ${MAX_BODY} caractères`);
@@ -118,7 +120,7 @@ export async function writeTopic(ctx: StoreCtx, ref: string, input: WriteInput):
       if (input.baseRevision === undefined) throw new HubError('exists', `le topic existe déjà (révision ${current}) : passer baseRevision`, current);
       if (input.baseRevision !== current) throw new HubError('conflict', `révision courante ${current}`, current);
       fm.extra = prev.extra;
-      fm.importedFrom = prev.importedFrom;
+      fm.importedFrom ??= prev.importedFrom;
     }
     const content = Buffer.from(serialize(fm, body), 'utf8');
     await writeFileAtomic(file, content);

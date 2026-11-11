@@ -40,6 +40,39 @@ test('moved repo without marker: session creates C, scan merges automatically, u
   assert.equal(markerId(b), c.id);
 });
 
+test('undoMerge refuses (conflict) when a later pass rewrote the .bak; registry untouched', async () => {
+  const sb = sandbox();
+  const a = initRepo(sb.dir('old'), 'https://github.com/u/r.git');
+  await rec(sb, [info(a, 'old-enc')]);
+  const b = join(sb.base, 'w', 'new');
+  renameSync(a, b);
+  await ens(sb, b);
+  const res = await rec(sb, [info(a, 'old-enc'), info(b, 'new-enc')]);
+  assert.equal(res.merges.length, 1);
+  const x = sb.dir('x'), y = sb.dir('y');
+  await rec(sb, [info(b, 'new-enc'), info(x, 'x'), info(y, 'y')]);
+  const ids = (await readRegistry(sb.hub)).reg.projects;
+  const [ix, iy] = [Object.keys(ids).find((i) => ids[i]!.paths.includes(x))!, Object.keys(ids).find((i) => ids[i]!.paths.includes(y))!];
+  await attachProject(sb.hub, ix, iy);
+  const before = readFileSync(registryFile(sb.hub), 'utf8');
+  await assert.rejects(undoMerge(sb.hub, res.merges[0]!), { code: 'conflict' });
+  assert.equal(readFileSync(registryFile(sb.hub), 'utf8'), before);
+});
+
+test('fingerprints of registry entries missing git are computed without the registry lock', async () => {
+  const sb = sandbox();
+  const d = initRepo(sb.dir('hookrepo'), 'https://github.com/u/h.git');
+  const e = (await ens(sb, d))!;
+  assert.ok(!('git' in (await readRegistry(sb.hub)).reg.projects[e.id]!));
+  let calls = 0;
+  await reconcile([], {
+    hubHome: sb.hub, exclude: sb.exclude,
+    fingerprint: async () => { calls++; assert.ok(!existsSync(registryFile(sb.hub) + '.lock')); return { rootCommits: ['r'], remote: 'x' }; },
+  });
+  assert.ok(calls >= 1);
+  assert.ok((await readRegistry(sb.hub)).reg.projects[e.id]!.git);
+});
+
 test('two candidate clones -> proposals, no merge; two live clones stay two projects', async () => {
   const sb = sandbox();
   const o = initRepo(sb.dir('orig'), 'https://github.com/u/r.git');
