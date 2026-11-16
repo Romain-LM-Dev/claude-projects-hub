@@ -8,13 +8,15 @@ import { newEntry, updateRegistry, readRegistry } from '../core/registry.ts';
 import { writeTopic } from '../core/store.ts';
 import { sandbox } from '../../test/fixtures/kit.ts';
 
-const S: any = (globalThis as any).__vsOh = { cmds: new Map(), pick: undefined as any, open: undefined as any, info: undefined as any, infos: [] as string[], errors: [] as string[], picked: [] as any[], calls: [] as any[], opened: 0 };
+const S: any = (globalThis as any).__vsOh = { cmds: new Map(), pick: undefined as any, open: undefined as any, info: undefined as any, choose: undefined as any, modals: [] as any[], infos: [] as string[], errors: [] as string[], picked: [] as any[], calls: [] as any[], opened: 0 };
 const stub = `const S = globalThis.__vsOh;
-export const QuickPickItemKind = { Separator: -1, Default: 0 };
 export const window = {
   showQuickPick: async (items, o) => { S.picked.push({ items, o }); return S.pick?.(items); },
   showOpenDialog: async () => { S.opened++; return S.open; },
-  showInformationMessage: async (m, ...b) => { S.infos.push(m); return S.info?.(m, b); },
+  showInformationMessage: async (m, ...b) => {
+    if (b[0]?.modal) { S.modals.push({ m, detail: b[0].detail, buttons: b.slice(1) }); return S.choose?.(b.slice(1)); }
+    S.infos.push(m); return S.info?.(m, b);
+  },
   showErrorMessage: async (m) => { S.errors.push(m); return undefined; },
 };
 export const commands = { registerCommand: (id, fn) => { S.cmds.set(id, fn); return { dispose() {} }; }, executeCommand: async (id, ...a) => { S.calls.push([id, ...a]); return S.cmds.get(id)?.(...a); } };`;
@@ -36,7 +38,9 @@ const hub: any = {
 };
 registerOrphanHelp(hub, () => {}, { now: () => NOW, relink: (h, id, dir, o) => { relinkCalls.push([id, dir]); return relinkOrphan(h, id, dir, { ...o, exclude: sb.exclude }); } });
 const help = (n: any) => S.cmds.get('claudeProjectsHub.orphanHelp')(n);
-const reset = () => { S.pick = S.open = S.info = undefined; S.infos.length = S.errors.length = S.picked.length = S.calls.length = S.opened = relinkCalls.length = 0; };
+const OTHER = (b: string[]) => b.find((x) => x === 'Autres actions…');
+const ADVISED = (b: string[]) => b[0];
+const reset = () => { S.pick = S.open = S.info = undefined; S.choose = OTHER; S.modals.length = S.infos.length = S.errors.length = S.picked.length = S.calls.length = S.opened = relinkCalls.length = 0; };
 const labels = () => S.picked[0].items.map((i: any) => i.label as string);
 
 const mkOrphan = async (id: string, claudeDirs: string[]) => {
@@ -54,18 +58,23 @@ test('facts and advice for an orphan with topics; choosing the advice runs the r
   writeFileSync(join(mem, 'n.md'), '---\nname: n\ndescription: d\ntype: project\n---\nx\n');
   projects = [{ info: { cwd: 'x', claudeDirs: ['old-a'], sessions: [session('old-a', 70), session('other', 1)] } }];
   await help(n);
+  const { m, detail, buttons } = S.modals[0];
+  assert.equal(m, 'Orphelin o-topics : que faire ?');
+  for (const want of [`Ancien dossier : ${join(sb.base, 'gone', 'o-topics')}`, 'Topics du projet : 1', 'Notes d\'auto-mémoire : 1', 'Sessions : 1 (2.0 Mo)', 'Dernière activité : il y a 70 jour(s)', 'Dernière session : Ma session', 'Conseil : Il porte des topics']) assert.ok(detail.includes(want), want);
+  assert.deepEqual(buttons, ['Indiquer son nouveau dossier…', 'Autres actions…']);
   assert.equal(S.picked[0].o.title, 'Orphelin o-topics : que faire ?');
   const l = labels();
-  for (const want of ['Ce que l\'on sait', 'Conseil', 'Actions', 'Topics du projet : 1', 'Notes d\'auto-mémoire : 1', 'Sessions : 1 (2.0 Mo)', 'Dernière activité : il y a 70 jour(s)', 'Dernière session : Ma session']) assert.ok(l.includes(want), want);
-  assert.ok(l.some((x: string) => x.startsWith('$(lightbulb) Il porte des topics')), 'advice text');
-  assert.ok(l.some((x: string) => x === 'Indiquer son nouveau dossier… (conseillé)'));
+  assert.ok(l.includes('Indiquer son nouveau dossier… (conseillé)'));
   assert.ok(l.includes('Copier l\'auto-mémoire…'));
-  S.pick = (items: any[]) => items.find((i) => i.label.startsWith('$(lightbulb)'));
+  assert.ok(S.picked[0].items.every((i: any) => i.run), 'only actions in the quick pick');
+  reset();
+  S.choose = ADVISED;
   await help(n);
   assert.equal(S.opened, 1, 'advice = relink: the folder dialog opens');
+  assert.equal(S.picked.length, 0);
 });
 
-test('advice "dismiss" runs dismissOrphan on the node; no notes = no copy action; facts alone do nothing', async () => {
+test('advice "dismiss" runs dismissOrphan on the node; no notes = no copy action; closing the dialog does nothing', async () => {
   reset();
   const n = await mkOrphan('o-empty', []);
   projects = [];
@@ -73,10 +82,11 @@ test('advice "dismiss" runs dismissOrphan on the node; no notes = no copy action
   S.cmds.set('claudeProjectsHub.dismissOrphan', (x: any) => { dismissed.push(x); });
   await help(n);
   assert.ok(!labels().includes('Copier l\'auto-mémoire…'));
-  S.pick = (items: any[]) => items.find((i) => i.label.startsWith('Topics du projet'));
+  S.choose = () => undefined;
   await help(n);
   assert.equal(dismissed.length, 0);
-  S.pick = (items: any[]) => items.find((i) => i.label.startsWith('$(lightbulb)'));
+  assert.equal(S.picked.length, 1, 'closed dialog: no quick pick');
+  S.choose = ADVISED;
   await help(n);
   assert.deepEqual(dismissed, [n]);
 });

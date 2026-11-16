@@ -2,7 +2,7 @@
   "name": "claude-projects-hub",
   "displayName": "Projects Hub for Claude Code",
   "description": "Hub de projets et de topics pour Claude Code.",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "publisher": "romain-lm-dev",
   "license": "SEE LICENSE IN LICENSE.md",
   "private": true,

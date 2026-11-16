@@ -276,9 +276,10 @@ Pour chaque orphelin O (non ignoré), candidats C = projets vivants, hors `O.dis
   (nœud « À rattacher » et notification) : Rattacher / Ignorer ce candidat / Ignorer l'orphelin.
 - Sinon : affiché dans « Orphelins » avec la commande manuelle « Rattacher à un projet… ».
 
-Aide « Que faire de cet orphelin ? » (clic sur un orphelin, ou menu d'un orphelin ou d'une proposition) : liste en
-lecture seule de ce que l'on sait (ancien dossier, dernière activité, nombre et taille des sessions, titre de la
-dernière, topics, notes d'auto-mémoire, remote git, candidat proposé), un conseil, puis les actions existantes
+Aide « Que faire de cet orphelin ? » (clic sur un orphelin, ou menu d'un orphelin ou d'une proposition) : fenêtre
+modale de ce que l'on sait (ancien dossier, dernière activité, nombre et taille des sessions, titre de la
+dernière, topics, notes d'auto-mémoire, remote git, candidat proposé) et du conseil, avec deux boutons : l'action
+conseillée ou « Autres actions… », qui ouvre la liste des actions existantes
 (rattacher, ouvrir la dernière session, copier l'auto-mémoire, supprimer les sessions, ignorer) et une nouvelle :
 « Indiquer son nouveau dossier… ». Conseil (fonction pure `adviseOrphan`, premier cas vrai) : candidat proposé →
 le rattacher ; ni session, ni topic, ni note → l'ignorer ; topics ou notes → ne pas supprimer, indiquer son nouveau
@@ -448,6 +449,7 @@ quand Node manque ; règle de permission posée par l'extension ; CI GitHub Acti
 | 2026-11-11 | j5 | §7.5 | limites de `copyAutoMemory` acceptées |
 | 2026-11-11 | j6 | §7.4 | aucun git sous le verrou du registre (code à changer) |
 | 2026-11-11 | a, b, h | ADR 0005, ADR 0001 | amendements datés |
+| 2026-11-16 | 0.5.1 | §7.4 | aide « Que faire de cet orphelin ? » : constat et conseil dans une fenêtre modale (texte entier), boutons « action conseillée » et « Autres actions… » |
 | 2026-11-16 | 0.5 | §10, §12, ADR 0007 | « Supprimer le projet… » pour un projet vivant (marqueur compris, jamais son dossier) ; double confirmation (récapitulatif puis nom du projet) pour projet et orphelin ; dossier Claude listé par une autre entrée jamais touché |
 | 2026-11-16 | 0.4 | §3, ADR 0007 | « Supprimer l'orphelin… » : sessions, dossiers Claude (auto-mémoire), topics à la corbeille, puis entrée du registre retirée (pas si un fichier n'a pas pu partir) |
 | 2026-11-16 | 0.3 | §7.4 | aide « Que faire de cet orphelin ? » (constat, conseil `adviseOrphan`, actions) et « Indiquer son nouveau dossier… » (`relinkOrphan`) |

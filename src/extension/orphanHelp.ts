@@ -9,7 +9,7 @@ import { sessionUri, type Hub, type Node } from "./tree.ts";
 type Item = vscode.QuickPickItem & { run?: () => unknown };
 
 const DAY = 86_400_000;
-const sep = (label: string): Item => ({ label, kind: vscode.QuickPickItemKind.Separator });
+const OTHER = "Autres actions…";
 const mo = (b: number) => (b / 1048576).toFixed(1);
 
 /** `now` and `relink` are injectable: deterministic "il y a N jours", and test folders live under the excluded tmpdir. */
@@ -62,33 +62,47 @@ export function registerOrphanHelp(hub: Hub, refresh: () => void, { now = Date.n
         relink: () => relink(orphan, notes),
         deleteSessions: () => exec("deleteSessions", orphan),
       };
-      const mark = (a: OrphanAction) => (a === advice.action ? " (conseillé)" : "");
+      const label: Record<OrphanAction, string> = {
+        relink: "Indiquer son nouveau dossier…",
+        attachCandidate: `Rattacher à ${candidate}`,
+        deleteSessions: "Mettre ses sessions à la corbeille…",
+        dismiss: "Ignorer cet orphelin",
+      };
+      const act = (a: OrphanAction, detail: string): Item => ({ label: label[a] + (a === advice.action ? " (conseillé)" : ""), detail, run: doAction[a] });
+      const title = `Orphelin ${name} : que faire ?`;
 
-      const items: Item[] = [
-        sep("Ce que l'on sait"),
-        { label: "Un orphelin est un projet dont le dossier n'existe plus à l'endroit connu : déplacé, renommé ou supprimé. Ses sessions et sa mémoire sont conservées." },
-        { label: `Ancien dossier : ${former ?? "inconnu"}` },
-        { label: last ? `Dernière activité : ${daysIdle ? `il y a ${daysIdle} jour(s)` : "aujourd'hui"}` : "Dernière activité : aucune session" },
-        { label: `Sessions : ${sessions.length} (${mo(sessions.reduce((s, x) => s + x.sizeBytes, 0))} Mo)` },
-        ...(last ? [{ label: `Dernière session : ${last.title || last.sessionId}`, description: "ouvrir", run: () => exec("openSession", sessionUri(last)) }] : []),
-        { label: `Topics du projet : ${topics}` },
-        { label: `Notes d'auto-mémoire : ${notes}` },
-        ...(remote ? [{ label: `Remote git : ${remote}` }] : []),
-        ...(candidate ? [{ label: `Candidat proposé : ${candidate}` }] : []),
-        sep("Conseil"),
-        { label: `$(lightbulb) ${advice.text}`, run: doAction[advice.action] },
-        sep("Actions"),
-        { label: `Indiquer son nouveau dossier…${mark("relink")}`, detail: "Le dossier a été déplacé ou renommé : on le désigne, l'orphelin y retrouve ses sessions et sa mémoire.", run: doAction.relink },
-        candidate
-          ? { label: `Rattacher à ${candidate}${mark("attachCandidate")}`, detail: "Le projet proposé est le même projet à son nouveau dossier.", run: doAction.attachCandidate }
-          : { label: "Rattacher à un projet existant…", detail: "Le projet vit déjà sous un autre nom ou dans un autre dossier connu du hub.", run: () => exec("attachProject", orphan) },
-        ...(last ? [{ label: "Ouvrir la dernière session", detail: "Pour relire de quoi il s'agissait avant de décider.", run: () => exec("openSession", sessionUri(last)) }] : []),
-        ...(notes ? [{ label: "Copier l'auto-mémoire…", detail: "Le projet continue ailleurs et sa mémoire Claude doit le suivre ; rien n'est écrasé.", run: () => exec("copyAutoMemory", n) }] : []),
-        { label: `Mettre ses sessions à la corbeille…${mark("deleteSessions")}`, detail: "Le projet est abandonné et ses conversations ne servent plus ; récupérables dans la corbeille.", run: doAction.deleteSessions },
-        { label: "Supprimer l'orphelin et tout son contenu…", detail: "Rien à garder : sessions, topics, auto-mémoire et entrée du hub partent à la corbeille.", run: () => exec("deleteOrphan", orphan) },
-        { label: `Ignorer cet orphelin${mark("dismiss")}`, detail: "Rien à garder ni à retrouver : il est masqué, et reste rattachable à la main.", run: doAction.dismiss },
+      // Facts go in a modal: it wraps long paths and the advice, where quick pick items are cut to one line.
+      const facts = [
+        "Un orphelin est un projet dont le dossier n'existe plus à l'endroit connu : déplacé, renommé ou supprimé. Ses sessions et sa mémoire sont conservées.",
+        "",
+        `Ancien dossier : ${former ?? "inconnu"}`,
+        last ? `Dernière activité : ${daysIdle ? `il y a ${daysIdle} jour(s)` : "aujourd'hui"}` : "Dernière activité : aucune session",
+        `Sessions : ${sessions.length} (${mo(sessions.reduce((s, x) => s + x.sizeBytes, 0))} Mo)`,
+        ...(last ? [`Dernière session : ${last.title || last.sessionId}`] : []),
+        `Topics du projet : ${topics}`,
+        `Notes d'auto-mémoire : ${notes}`,
+        ...(remote ? [`Remote git : ${remote}`] : []),
+        ...(candidate ? [`Candidat proposé : ${candidate}`] : []),
+        "",
+        `Conseil : ${advice.text}`,
       ];
-      const pick = await vscode.window.showQuickPick(items, { title: `Orphelin ${name} : que faire ?` });
+      const choice = await vscode.window.showInformationMessage(title, { modal: true, detail: facts.join("\n") }, label[advice.action], OTHER);
+      if (choice === label[advice.action]) return await doAction[advice.action]();
+      if (choice !== OTHER) return;
+
+      // Details stay under ~70 characters so the quick pick shows them whole.
+      const items: Item[] = [
+        act("relink", "Dossier déplacé ou renommé : il y retrouve sessions et mémoire."),
+        candidate
+          ? act("attachCandidate", "Le projet proposé est le même projet à son nouveau dossier.")
+          : { label: "Rattacher à un projet existant…", detail: "Il vit déjà sous un autre nom ou dossier connu du hub.", run: () => exec("attachProject", orphan) },
+        ...(last ? [{ label: "Ouvrir la dernière session", detail: "Pour relire de quoi il s'agissait avant de décider.", run: () => exec("openSession", sessionUri(last)) }] : []),
+        ...(notes ? [{ label: "Copier l'auto-mémoire…", detail: "Sa mémoire Claude suit le projet ailleurs ; rien n'est écrasé.", run: () => exec("copyAutoMemory", n) }] : []),
+        act("deleteSessions", "Projet abandonné : conversations à la corbeille, récupérables."),
+        { label: "Supprimer l'orphelin et tout son contenu…", detail: "Sessions, topics, auto-mémoire et entrée du hub à la corbeille.", run: () => exec("deleteOrphan", orphan) },
+        act("dismiss", "Rien à garder ni à retrouver : masqué, rattachable à la main."),
+      ];
+      const pick = await vscode.window.showQuickPick(items, { title });
       await pick?.run?.();
     } catch (e) { fail(e); }
   };

@@ -1,5 +1,9 @@
 # Journal des modifications
 
+## 0.5.1 - 2026-11-16
+
+- Modifié : « Que faire de cet orphelin ? » affiche ce que l'on sait et le conseil dans une fenêtre, sans texte coupé ; boutons : l'action conseillée ou « Autres actions… » (liste des actions, détails raccourcis).
+
 ## 0.5.0 - 2026-11-16
 
 - Ajouté : commande « Supprimer le projet… » (menu d'un projet enregistré) : comme pour un orphelin, plus le fichier marqueur `.claude/projects-hub.json` ; le dossier du projet n'est jamais supprimé. Un dossier Claude listé par une autre entrée du registre n'est pas touché.
