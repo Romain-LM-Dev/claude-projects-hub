@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { isSessionLive, sessionFiles } from "../core/sessionDelete.ts";
+import { forgetProject, isSessionLive, orphanFiles, sessionFiles } from "../core/sessionDelete.ts";
 import type { SessionSummary } from "../core/transcript.ts";
 import type { Hub, Node } from "./tree.ts";
 
@@ -8,7 +8,31 @@ export type Deleter = (uri: vscode.Uri) => PromiseLike<void>;
 const toTrash: Deleter = (uri) => vscode.workspace.fs.delete(uri, { recursive: true, useTrash: true });
 
 export function registerSessionDelete(hub: Hub, refresh: () => void, deleter: Deleter = toTrash): vscode.Disposable[] {
-  return [vscode.commands.registerCommand("claudeProjectsHub.deleteSessions", async (node?: Node, nodes?: Node[]) => {
+  return [vscode.commands.registerCommand("claudeProjectsHub.deleteOrphan", async (node?: Node) => {
+    if (node?.kind !== "orphan") return;
+    try {
+      const d = await hub.get();
+      const sessions = [...d.projects, ...(d.temp ?? [])].flatMap((p) => p.info.sessions).filter((s) => node.claudeDirs.includes(s.claudeDir));
+      for (const s of sessions) if (await isSessionLive(hub.claudeHome, s.sessionId)) { void vscode.window.showInformationMessage(`Une session de ${node.name} est ouverte : fermez-la d'abord.`); return; }
+      const f = await orphanFiles(hub.claudeHome, hub.hubHome, node.id, sessions);
+      const ok = await vscode.window.showWarningMessage(
+        `Supprimer l'orphelin « ${node.name} » ? ${sessions.length} session(s), ${f.topics} topic(s), ${f.notes} note(s) d'auto-mémoire (${(f.bytes / 1048576).toFixed(1)} Mo) partent à la corbeille et le projet disparaît du hub.`,
+        { modal: true }, "Supprimer l'orphelin");
+      if (ok !== "Supprimer l'orphelin") return;
+      let failed = 0;
+      for (const p of f.paths) {
+        try { await deleter(vscode.Uri.file(p)); } catch (e) {
+          failed++;
+          void vscode.window.showErrorMessage(`Claude Hub : corbeille impossible pour ${p} : ${(e as Error).message}`);
+        }
+      }
+      if (failed) void vscode.window.showErrorMessage(`Claude Hub : ${node.name} reste dans le hub, ${failed} élément(s) n'ont pas pu partir.`);
+      else await forgetProject(hub.hubHome, node.id);
+      hub.invalidate();
+      refresh();
+    } catch (e) { void vscode.window.showErrorMessage(`Claude Hub : ${(e as Error).message}`); }
+  }),
+  vscode.commands.registerCommand("claudeProjectsHub.deleteSessions", async (node?: Node, nodes?: Node[]) => {
     const sel = nodes?.length ? nodes : node ? [node] : [];
     const found = new Map<string, SessionSummary>();
     const add = (s: SessionSummary) => found.set(s.sessionId, s);

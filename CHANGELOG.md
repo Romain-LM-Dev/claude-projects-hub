@@ -1,5 +1,9 @@
 # Journal des modifications
 
+## 0.4.0 - 2026-11-16
+
+- Ajouté : commande « Supprimer l'orphelin… » (menu de l'orphelin et aide « Que faire de cet orphelin ? ») : sessions, dossier Claude (auto-mémoire comprise) et topics mis à la corbeille après confirmation, puis entrée du registre retirée ; l'entrée reste si un élément n'a pas pu partir (ADR 0007).
+
 ## 0.3.0 - 2026-11-16
 
 - Ajouté : aide « Que faire de cet orphelin ? » (clic sur un orphelin, ou menu d'un orphelin ou d'une proposition) : ce que l'on sait (ancien dossier, sessions, topics, notes, remote git, candidat), un conseil et les actions possibles.

@@ -85,6 +85,7 @@ export function registerOrphanHelp(hub: Hub, refresh: () => void, { now = Date.n
         ...(last ? [{ label: "Ouvrir la dernière session", detail: "Pour relire de quoi il s'agissait avant de décider.", run: () => exec("openSession", sessionUri(last)) }] : []),
         ...(notes ? [{ label: "Copier l'auto-mémoire…", detail: "Le projet continue ailleurs et sa mémoire Claude doit le suivre ; rien n'est écrasé.", run: () => exec("copyAutoMemory", n) }] : []),
         { label: `Mettre ses sessions à la corbeille…${mark("deleteSessions")}`, detail: "Le projet est abandonné et ses conversations ne servent plus ; récupérables dans la corbeille.", run: doAction.deleteSessions },
+        { label: "Supprimer l'orphelin et tout son contenu…", detail: "Rien à garder : sessions, topics, auto-mémoire et entrée du hub partent à la corbeille.", run: () => exec("deleteOrphan", orphan) },
         { label: `Ignorer cet orphelin${mark("dismiss")}`, detail: "Rien à garder ni à retrouver : il est masqué, et reste rattachable à la main.", run: doAction.dismiss },
       ];
       const pick = await vscode.window.showQuickPick(items, { title: `Orphelin ${name} : que faire ?` });

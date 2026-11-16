@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { registerHooks } from 'node:module';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -87,4 +87,31 @@ test('orphan node: sessions of its claudeDirs from the scan', async () => {
   reset(); S.warn = 'Mettre à la corbeille';
   await run({ kind: 'orphan', id: 'o', name: 'o', claudeDirs: ['old'] });
   assert.deepEqual(deleted, [join(home, 'projects', 'old', `${id(5)}.jsonl`)]);
+});
+
+test('deleteOrphan: cancelled, live refusal, success forgets the entry, a failure keeps it', async () => {
+  const hh = join(sb.base, 'hubhome');
+  const reload = () => writeFileSync(join(hh, 'registry.json'), JSON.stringify({ version: 1, projects: { o: { name: 'o', paths: [], formerPaths: [], claudeDirs: ['old'], dismissed: [], createdAt: 'x' }, p: { name: 'p', paths: ['/p'], formerPaths: [], claudeDirs: [], dismissed: ['o'], createdAt: 'x' } } }));
+  mkdirSync(join(hh, 'projects', 'o', 'topics'), { recursive: true });
+  writeFileSync(join(hh, 'projects', 'o', 'topics', 't.md'), 'x');
+  hub.hubHome = hh;
+  const del = (n: any) => S.cmds.get('claudeProjectsHub.deleteOrphan')(n);
+  const node = { kind: 'orphan', id: 'o', name: 'o', claudeDirs: ['old'] };
+  const ids = () => Object.keys(JSON.parse(readFileSync(join(hh, 'registry.json'), 'utf8')).projects);
+  reload(); reset();
+  await del(node);
+  assert.match(S.warned[0][0], /Supprimer l'orphelin « o » \? 1 session\(s\), 0 topic\(s\), 0 note\(s\)/);
+  assert.deepEqual(deleted, []); assert.deepEqual(ids(), ['o', 'p']);
+  reset(); S.warn = "Supprimer l'orphelin"; failOn = 'hubhome';
+  await del(node);
+  assert.equal(deleted.length, 1); assert.deepEqual(ids(), ['o', 'p']);
+  reset(); S.warn = "Supprimer l'orphelin";
+  await del(node);
+  assert.deepEqual(deleted.sort(), [join(home, 'projects', 'old'), join(hh, 'projects', 'o')].sort());
+  assert.deepEqual(ids(), ['p']);
+  put(`projects/old2/${id(4)}.jsonl`);
+  const live = { ...node, claudeDirs: ['dir'] };
+  reset(); S.warn = "Supprimer l'orphelin";
+  await del(live);
+  assert.match(S.infos[0], /ouverte/); assert.equal(S.warned.length, 0);
 });

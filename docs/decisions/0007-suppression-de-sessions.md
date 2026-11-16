@@ -29,6 +29,20 @@ Option 2, par la commande « Supprimer la session… » :
 - Le noyau fournit la liste des chemins (`sessionFiles`) et le contrôle de vie ; l'extension met à la corbeille,
   puis rafraîchit (le cache de scan ignore les fichiers disparus).
 
+## Amendement du 2026-11-16 : « Supprimer l'orphelin… »
+Supprimer les sessions d'un orphelin le laissait affiché : son entrée du registre, ses topics et son auto-mémoire
+restaient. Commande sur un nœud orphelin (et dans l'aide de l'orphelin) qui retire TOUT l'orphelin :
+- mis à la corbeille : les fichiers de chacune de ses sessions (`sessionFiles`), chacun de ses dossiers Claude
+  `projects/<claudeDir>/` (auto-mémoire comprise ; `claudeDir` d'un seul segment, confiné sous `CLAUDE_HOME`), et son
+  dossier de topics `HUB_HOME/projects/<id>/` ;
+- puis son entrée retirée du registre (sous verrou), et son id retiré des `dismissed` des autres entrées.
+- Refus si l'entrée a un chemin vivant (ce n'est plus un orphelin) ou si une de ses sessions est ouverte.
+- Un dossier Claude que liste aussi un projet vivant (ancien chemin recréé) n'est jamais touché, ni les sessions
+  qu'il contient : il appartient désormais à ce projet.
+- Confirmation modale avec le nombre de sessions, de topics et de notes d'auto-mémoire, et la taille ; corbeille
+  indisponible ou échec d'un chemin → l'entrée du registre n'est PAS retirée (rien d'orphelin dans le registre ne
+  pointe vers des fichiers à moitié supprimés), message, aucune suppression définitive de repli.
+
 ## Conséquences
 - `CLAUDE_HOME` n'est plus en lecture seule : deuxième exception après §7.5, toujours sur action confirmée.
 - Un projet ou un orphelin peut rester sans session ; « Ignorer l'orphelin » le masque.

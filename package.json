@@ -2,7 +2,7 @@
   "name": "claude-projects-hub",
   "displayName": "Projects Hub for Claude Code",
   "description": "Hub de projets et de topics pour Claude Code.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "romain-lm-dev",
   "license": "SEE LICENSE IN LICENSE.md",
   "private": true,
@@ -120,6 +120,11 @@
       {
         "command": "claudeProjectsHub.deleteSessions",
         "title": "Supprimer la session…",
+        "category": "Claude Hub"
+      },
+      {
+        "command": "claudeProjectsHub.deleteOrphan",
+        "title": "Supprimer l'orphelin…",
         "category": "Claude Hub"
       },
       {
@@ -270,6 +275,11 @@
           "command": "claudeProjectsHub.deleteSessions",
           "when": "viewItem == orphan",
           "group": "z_danger"
+        },
+        {
+          "command": "claudeProjectsHub.deleteOrphan",
+          "when": "viewItem == orphan",
+          "group": "z_danger"
         }
       ],
       "commandPalette": [
@@ -299,6 +309,10 @@
         },
         {
           "command": "claudeProjectsHub.deleteSessions",
+          "when": "false"
+        },
+        {
+          "command": "claudeProjectsHub.deleteOrphan",
           "when": "false"
         }
       ]

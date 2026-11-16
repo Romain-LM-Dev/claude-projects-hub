@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { isSessionLive, sessionFiles } from './sessionDelete.ts';
+import { forgetProject, isSessionLive, orphanFiles, sessionFiles } from './sessionDelete.ts';
 
 const ID = '11111111-2222-3333-4444-555555555555';
 const home = mkdtempSync(join(tmpdir(), 'hub-sdel-'));
@@ -39,4 +39,35 @@ test('isSessionLive: live pid, dead pid, other session', async () => {
   assert.equal(await isSessionLive(home, ID), true);
   assert.equal(await isSessionLive(home, ID, () => false), false);
   assert.equal(await isSessionLive(home, '99999999-2222-3333-4444-555555555555'), false);
+});
+
+test('orphanFiles / forgetProject', async () => {
+  const hub = mkdtempSync(join(tmpdir(), 'hub-orph-'));
+  const entry = (o: object) => ({ name: 'o', paths: [], formerPaths: [], claudeDirs: ['od'], dismissed: [], createdAt: 'x', ...o });
+  const reg = { version: 1, projects: {
+    orph: entry({}), live: entry({ paths: ['/x'], claudeDirs: ['ld'] }), bad: entry({ claudeDirs: ['a/b'] }),
+    other: entry({ paths: ['/y'], claudeDirs: ['yd'], dismissed: ['orph', 'z'] }),
+    // shared: the old path was recreated, a live project now uses the same Claude folder 'sd'
+    orphShared: entry({ claudeDirs: ['sd'] }), liveShared: entry({ paths: ['/z'], claudeDirs: ['SD'] }),
+  } };
+  writeFileSync(join(hub, 'registry.json'), JSON.stringify(reg));
+  put(`projects/od/${ID}.jsonl`, 'abc');
+  put('projects/od/memory/n.md', '---\nname: n\n---\nx');
+  put(`session-env/${ID}/e`, '12');
+  mkdirSync(join(hub, 'projects', 'orph', 'topics'), { recursive: true });
+  writeFileSync(join(hub, 'projects', 'orph', 'topics', 't.md'), 'x');
+  const r = await orphanFiles(home, hub, 'orph', [{ sessionId: ID, claudeDir: 'od' }]);
+  assert.deepEqual(r.paths.sort(), [join(home, 'projects', 'od'), join(hub, 'projects', 'orph'), join(home, 'session-env', ID), join(home, 'file-history', ID)].sort());
+  assert.equal(r.notes, 1);
+  const SID = '77777777-2222-3333-4444-555555555555';
+  put(`projects/sd/${SID}.jsonl`, 'live session');
+  put(`session-env/${SID}/e`, '1');
+  const s = await orphanFiles(home, hub, 'orphShared', [{ sessionId: SID, claudeDir: 'sd' }]);
+  assert.deepEqual(s.paths, [], 'a Claude folder shared with a live project, and its sessions, are never listed');
+  for (const id of ['live', 'nope', 'bad']) await assert.rejects(orphanFiles(home, hub, id, []), { code: 'invalid_input' });
+  await assert.rejects(forgetProject(hub, 'live'), { code: 'invalid_input' });
+  await forgetProject(hub, 'orph');
+  const after = JSON.parse(readFileSync(join(hub, 'registry.json'), 'utf8'));
+  assert.deepEqual(Object.keys(after.projects), ['live', 'bad', 'other', 'orphShared', 'liveShared']);
+  assert.deepEqual(after.projects.other.dismissed, ['z']);
 });

@@ -32,7 +32,7 @@ VS Code ── extension.js ──┐                      ┌── hook.js (Se
 ## 3. Emplacements
 
 - `CLAUDE_HOME` = `$CLAUDE_CONFIG_DIR` sinon `~/.claude`. Lecture seule, sauf la copie d'auto-mémoire confirmée
-  par l'utilisateur (§7.5) et la mise à la corbeille de sessions confirmée (ADR 0007, §10).
+  par l'utilisateur (§7.5) et la mise à la corbeille de sessions, ou d'un orphelin entier, confirmée (ADR 0007, §10).
 - `HUB_HOME` = `$CLAUDE_PROJECTS_HUB_HOME` sinon `~/.claude-projects-hub` (la variable sert aux tests).
 
 ```
@@ -446,6 +446,7 @@ quand Node manque ; règle de permission posée par l'extension ; CI GitHub Acti
 | 2026-11-11 | j5 | §7.5 | limites de `copyAutoMemory` acceptées |
 | 2026-11-11 | j6 | §7.4 | aucun git sous le verrou du registre (code à changer) |
 | 2026-11-11 | a, b, h | ADR 0005, ADR 0001 | amendements datés |
+| 2026-11-16 | 0.4 | §3, ADR 0007 | « Supprimer l'orphelin… » : sessions, dossiers Claude (auto-mémoire), topics à la corbeille, puis entrée du registre retirée (pas si un fichier n'a pas pu partir) |
 | 2026-11-16 | 0.3 | §7.4 | aide « Que faire de cet orphelin ? » (constat, conseil `adviseOrphan`, actions) et « Indiquer son nouveau dossier… » (`relinkOrphan`) |
 | 2026-11-11 | 0.2 | §3, §10, §12, ADR 0007 | suppression de sessions : mise à la corbeille du transcript, du dossier de session, de `file-history/<id>` et `session-env/<id>`, sur confirmation, jamais pour une session vivante |
 | 2026-11-11 | T11 | §7.3, §7.4 | revue finale : marqueur d'un parent seulement dans un dépôt git ; Détacher refusé hors racine ; dossier mort rattaché à l'entrée du hook (pas d'orphelin doublon) ; Annuler d'un passage à plusieurs fusions = un seul appel `undoMerge(hub, records[])` qui restaure le `.bak` une fois et inscrit tous les refus |
