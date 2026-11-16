@@ -12,7 +12,7 @@ projet et entre les projets, que Claude lit et écrit par un serveur MCP `hub` e
 
 ## État du projet
 
-Version 0.2.0 (extension et plugin). Licence source-available non commerciale ([LICENSE.md](LICENSE.md)). Voir
+Version 0.3.0 (extension et plugin). Licence source-available non commerciale ([LICENSE.md](LICENSE.md)). Voir
 [CHANGELOG.md](CHANGELOG.md). Point de reprise : `docs/reprise.md`. English: [README.en.md](README.en.md).
 
 ## Fonctionnalités
@@ -71,8 +71,8 @@ L'extension ne modifie jamais ce fichier.
 ## Commandes
 
 Toutes sont de catégorie « Claude Hub ». « Rattacher à un projet… », « Détacher ce dossier », « Ignorer ce candidat »,
-« Ignorer l'orphelin », « Copier l'auto-mémoire » et « Supprimer la session… » n'existent que dans les menus contextuels des vues, pas dans la
-palette de commandes.
+« Ignorer l'orphelin », « Copier l'auto-mémoire », « Que faire de cet orphelin ? » et « Supprimer la session… » n'existent que dans les menus contextuels des vues, pas dans la
+palette de commandes. Un clic sur un orphelin ouvre « Que faire de cet orphelin ? ».
 
 | Commande | Rôle |
 |---|---|
@@ -87,6 +87,7 @@ palette de commandes.
 | Détacher ce dossier | donne au dossier une identité neuve ; les topics restent au projet d'origine |
 | Ignorer ce candidat | refuse un rattachement proposé |
 | Ignorer l'orphelin | masque l'orphelin ; il reste rattachable à la main |
+| Que faire de cet orphelin ? | s'ouvre d'un clic sur un orphelin : ce que l'on sait, un conseil et les actions, dont « Indiquer son nouveau dossier… » pour un projet déplacé |
 | Annuler le dernier rattachement | défait les fusions automatiques du dernier scan ; elles ne sont pas refaites au scan suivant |
 | Copier l'auto-mémoire | copie, après confirmation, l'auto-mémoire Claude vers le nouveau dossier ; rien n'est écrasé |
 | Supprimer la session… | met à la corbeille, après confirmation, les fichiers des sessions sélectionnées (ou d'un projet / orphelin) ; jamais une session ouverte |

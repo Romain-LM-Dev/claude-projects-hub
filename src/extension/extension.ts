@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { join } from "node:path";
 import { claudeHome, hubHome } from "../core/paths.ts";
 import { setupDiagnostics } from "./diagnostics.ts";
+import { registerOrphanHelp } from "./orphanHelp.ts";
 import { registerPreview } from "./preview.ts";
 import { registerRelocation } from "./relocation.ts";
 import { registerInstall } from "./install.ts";
@@ -45,6 +46,7 @@ export function activate(context: vscode.ExtensionContext) {
     ...registerInstall(context, hub.hubHome),
     ...registerTopicCommands(hub, refresh),
     ...reloc.disposables,
+    ...registerOrphanHelp(hub, refresh),
     ...registerPreview(hub),
   );
   return { projects, globalMemory, relocation: reloc.state };

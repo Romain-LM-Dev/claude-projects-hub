@@ -177,6 +177,7 @@ export class TreeProvider implements vscode.TreeDataProvider<Node> {
       case "orphan": {
         const it = mk(n.name, C.None, "orphan");
         it.description = "dossier introuvable";
+        it.command = { command: "claudeProjectsHub.orphanHelp", title: "Que faire de cet orphelin ?", arguments: [n] };
         return it;
       }
       case "memory": return mk(`Mémoire (${n.items.length})`, n.items.length ? C.Collapsed : C.None, "memoryGroup");

@@ -275,6 +275,20 @@ Pour chaque orphelin O (non ignoré), candidats C = projets vivants, hors `O.dis
 - **Probable** : `rootCommits` qui se recoupent sans le reste, ou même nom de dossier (sans casse). → proposé
   (nœud « À rattacher » et notification) : Rattacher / Ignorer ce candidat / Ignorer l'orphelin.
 - Sinon : affiché dans « Orphelins » avec la commande manuelle « Rattacher à un projet… ».
+
+Aide « Que faire de cet orphelin ? » (clic sur un orphelin, ou menu d'un orphelin ou d'une proposition) : liste en
+lecture seule de ce que l'on sait (ancien dossier, dernière activité, nombre et taille des sessions, titre de la
+dernière, topics, notes d'auto-mémoire, remote git, candidat proposé), un conseil, puis les actions existantes
+(rattacher, ouvrir la dernière session, copier l'auto-mémoire, supprimer les sessions, ignorer) et une nouvelle :
+« Indiquer son nouveau dossier… ». Conseil (fonction pure `adviseOrphan`, premier cas vrai) : candidat proposé →
+le rattacher ; ni session, ni topic, ni note → l'ignorer ; topics ou notes → ne pas supprimer, indiquer son nouveau
+dossier ou le rattacher ; inactif depuis plus de 60 jours → ses sessions peuvent aller à la corbeille ; sinon →
+indiquer son nouveau dossier s'il a été déplacé, sinon l'ignorer.
+« Indiquer son nouveau dossier… » (`relinkOrphan(hub, orphanId, dir)`) : dossier exclu (§7.3) → refus ; dossier déjà
+résolu vers un projet P (marqueur ou registre) → fusion `attachProject(orphanId, P)` (annulable) ; sinon marqueur
+`{id: orphanId}` écrit avec `wx` puis `ensureProject(dir, { git: true })`, qui inscrit le dossier dans les `paths` de
+l'orphelin (ligne `info/exclude` comprise). Les transcripts restent où ils sont (§7.5) ; s'il a des notes
+d'auto-mémoire, la copie est proposée ensuite.
 Seuls les orphelins ont des candidats : deux clones ou worktrees vivants restent deux projets (aucun marqueur
 partagé) tant que l'utilisateur ne les réunit pas par « Rattacher à un projet… », offerte aussi sur un projet
 vivant (même fusion, marqueur réécrit).
@@ -432,6 +446,7 @@ quand Node manque ; règle de permission posée par l'extension ; CI GitHub Acti
 | 2026-11-11 | j5 | §7.5 | limites de `copyAutoMemory` acceptées |
 | 2026-11-11 | j6 | §7.4 | aucun git sous le verrou du registre (code à changer) |
 | 2026-11-11 | a, b, h | ADR 0005, ADR 0001 | amendements datés |
+| 2026-11-16 | 0.3 | §7.4 | aide « Que faire de cet orphelin ? » (constat, conseil `adviseOrphan`, actions) et « Indiquer son nouveau dossier… » (`relinkOrphan`) |
 | 2026-11-11 | 0.2 | §3, §10, §12, ADR 0007 | suppression de sessions : mise à la corbeille du transcript, du dossier de session, de `file-history/<id>` et `session-env/<id>`, sur confirmation, jamais pour une session vivante |
 | 2026-11-11 | T11 | §7.3, §7.4 | revue finale : marqueur d'un parent seulement dans un dépôt git ; Détacher refusé hors racine ; dossier mort rattaché à l'entrée du hook (pas d'orphelin doublon) ; Annuler d'un passage à plusieurs fusions = un seul appel `undoMerge(hub, records[])` qui restaure le `.bak` une fois et inscrit tous les refus |
 | 2026-11-11 | o | §7.4 | Annuler durable : `.bak` pris juste avant la première fusion (C garde son id), C inscrit dans `O.dismissed` (défaut trouvé en T8 : le scan suivant refusionnait) |

@@ -97,6 +97,12 @@ Limite acceptée : projet enregistré par le hook puis déplacé sans marqueur a
 Hub réel nettoyé avec l'accord de l'utilisateur : 2 entrées QA retirées du registre sous verrou (sauvegarde
 `registry.json.before-qa-cleanup`), 3 dossiers `*projects-hub-qa*` mis à la corbeille.
 
+## Après la v1
+- 0.2.0 (2026-11-11) : « Supprimer la session… » (corbeille, ADR 0007).
+- 0.3.0 (2026-11-16) : aide « Que faire de cet orphelin ? » (constat, conseil `adviseOrphan`, actions) et
+  « Indiquer son nouveau dossier… » (`relinkOrphan`, §7.4) ; dépôt déplacé dans `C:\_Projets\claude-projects-hub`.
+  `test:ext` fiabilisé : renommage des dossiers de test réessayé sur EPERM/EBUSY (échouait 1 fois sur 4, 5/5 après).
+
 ## État final (2026-11-11)
 v1 terminée (T0 à T11), fusionnée en avance rapide dans `main` et poussée (`fd7879a`, branche `feat/noyau` aussi).
 Extension 0.1.0 installée ; marketplace `~/.claude-projects-hub/marketplace` recopiée depuis l'extension 0.1.0

@@ -14,7 +14,7 @@ The interface and command titles are in French; they are quoted as-is below.
 
 ## Project status
 
-Version 0.2.0 (extension and plugin). Non-commercial source-available license ([LICENSE.md](LICENSE.md)).
+Version 0.3.0 (extension and plugin). Non-commercial source-available license ([LICENSE.md](LICENSE.md)).
 See [CHANGELOG.md](CHANGELOG.md). Resume point: `docs/reprise.md`. Français : [README.md](README.md).
 
 ## Features
@@ -72,7 +72,7 @@ The extension never modifies this file.
 ## Commands
 
 All belong to the "Claude Hub" category. "Rattacher à un projet…", "Détacher ce dossier", "Ignorer ce candidat",
-"Ignorer l'orphelin", "Copier l'auto-mémoire" and "Supprimer la session…" exist only in the views' context menus, not in the command palette.
+"Ignorer l'orphelin", "Copier l'auto-mémoire", "Que faire de cet orphelin ?" and "Supprimer la session…" exist only in the views' context menus, not in the command palette. Clicking an orphan opens "Que faire de cet orphelin ?".
 
 | Command | Purpose |
 |---|---|
@@ -87,6 +87,7 @@ All belong to the "Claude Hub" category. "Rattacher à un projet…", "Détacher
 | Détacher ce dossier | gives the folder a fresh identity; topics stay with the original project |
 | Ignorer ce candidat | rejects a proposed attachment |
 | Ignorer l'orphelin | hides the orphan; it can still be attached by hand |
+| Que faire de cet orphelin ? | opens when you click an orphan: what is known, advice and the actions, including "Indiquer son nouveau dossier…" for a moved project |
 | Annuler le dernier rattachement | undoes the automatic merges of the last scan; they are not redone on the next scan |
 | Copier l'auto-mémoire | copies Claude auto-memory to the new folder after confirmation; nothing is overwritten |
 | Supprimer la session… | after confirmation, sends the files of the selected sessions (or of a project / orphan) to the trash; never an open session |

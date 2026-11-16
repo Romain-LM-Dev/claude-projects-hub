@@ -4,6 +4,16 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
+// Windows briefly locks a freshly written folder (antivirus, watchers): retry like writeFileAtomic does.
+async function moveDir(from: string, to: string): Promise<void> {
+  for (const wait of [50, 100, 200, 400, 800, 1600, 0]) {
+    try { renameSync(from, to); return; } catch (e) {
+      if (!wait || !["EPERM", "EBUSY", "EACCES"].includes((e as NodeJS.ErrnoException).code ?? "")) throw e;
+      await new Promise((r) => setTimeout(r, wait));
+    }
+  }
+}
+
 interface Api {
   projects: { getChildren(n?: any): Promise<any[]> };
   globalMemory: { getChildren(n?: any): Promise<any[]> };
@@ -78,7 +88,7 @@ async function relocationSuite(api: Api) {
     const [idA] = idsAt(oldA);
     assert.ok(idA, "projet d'origine non enregistré");
     mkdirSync(join(base, "a2"), { recursive: true });
-    renameSync(oldA, newA);
+    await moveDir(oldA, newA);
     session(newA, "sa2");
     await rescan();
     assert.equal(api.relocation.lastMerges.length, 1, "fusion attendue");
@@ -121,7 +131,7 @@ async function relocationSuite(api: Api) {
     session(oldB, "sb1");
     await rescan();
     mkdirSync(join(base, "b2"), { recursive: true });
-    renameSync(oldB, newB);
+    await moveDir(oldB, newB);
     git(newB, "remote", "set-url", "origin", "https://example.com/beta-b.git");
     session(newB, "sb2");
     let roots = await rescan();
