@@ -43,6 +43,21 @@ restaient. Commande sur un nœud orphelin (et dans l'aide de l'orphelin) qui ret
   indisponible ou échec d'un chemin → l'entrée du registre n'est PAS retirée (rien d'orphelin dans le registre ne
   pointe vers des fichiers à moitié supprimés), message, aucune suppression définitive de repli.
 
+## Amendement du 2026-11-16 (2) : « Supprimer le projet… » et double confirmation
+- La suppression complète vaut aussi pour un projet vivant (nœud projet ayant un id ; pas pour « Temporaires »,
+  sans entrée) : mêmes fichiers que pour un orphelin, plus le marqueur `.claude/projects-hub.json` de chacun de ses
+  dossiers vivants (le fichier seul, à la corbeille ; rien d'autre dans `.claude/`), sinon la session suivante
+  recréerait le projet avec le même id. Le dossier du projet lui-même n'est JAMAIS supprimé.
+- Un dossier Claude que liste aussi une AUTRE entrée du registre (vivante ou orpheline) n'est jamais touché, ni ses
+  sessions (remplace la règle « projet vivant » de l'amendement précédent).
+- Refus, avant toute question, si une de ses sessions est ouverte (dont le projet de la session courante).
+- Double confirmation, pour un projet comme pour un orphelin : (1) fenêtre modale qui liste ce qui part (sessions
+  et taille, topics, notes d'auto-mémoire, oubli par le hub, marqueur) et rappelle que le dossier du projet reste,
+  bouton « Continuer… » ; (2) saisie du nom exact du projet, refusée tant qu'elle diffère. Échap ou annulation à
+  l'une des deux étapes : rien n'est fait.
+- Ordre et repli inchangés : fichiers à la corbeille d'abord ; l'entrée du registre n'est retirée que si tous sont
+  partis.
+
 ## Conséquences
 - `CLAUDE_HOME` n'est plus en lecture seule : deuxième exception après §7.5, toujours sur action confirmée.
 - Un projet ou un orphelin peut rester sans session ; « Ignorer l'orphelin » le masque.

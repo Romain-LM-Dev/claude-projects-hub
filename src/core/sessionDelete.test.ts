@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { forgetProject, isSessionLive, orphanFiles, sessionFiles } from './sessionDelete.ts';
+import { forgetProject, isSessionLive, orphanFiles, projectFiles, sessionFiles } from './sessionDelete.ts';
 
 const ID = '11111111-2222-3333-4444-555555555555';
 const home = mkdtempSync(join(tmpdir(), 'hub-sdel-'));
@@ -66,6 +66,23 @@ test('orphanFiles / forgetProject', async () => {
   assert.deepEqual(s.paths, [], 'a Claude folder shared with a live project, and its sessions, are never listed');
   for (const id of ['live', 'nope', 'bad']) await assert.rejects(orphanFiles(home, hub, id, []), { code: 'invalid_input' });
   await assert.rejects(forgetProject(hub, 'live'), { code: 'invalid_input' });
+  // live project: marker file only (never the folder nor .claude/), shared Claude folder untouched
+  const proj = mkdtempSync(join(tmpdir(), 'hub-proj-'));
+  mkdirSync(join(proj, '.claude'));
+  writeFileSync(join(proj, '.claude', 'projects-hub.json'), '{"id":"lv"}');
+  writeFileSync(join(proj, '.claude', 'settings.json'), '{}');
+  put(`projects/lvd/${SID}.jsonl`, 'x');
+  put(`projects/shd/${ID}.jsonl`, 'x');
+  writeFileSync(join(hub, 'registry.json'), JSON.stringify({ version: 1, projects: {
+    lv: entry({ paths: [proj], claudeDirs: ['lvd', 'shd'] }), orph: entry({ claudeDirs: ['shd'] }),
+  } }));
+  const l = await projectFiles(home, hub, 'lv', [{ sessionId: SID, claudeDir: 'lvd' }, { sessionId: ID, claudeDir: 'shd' }], { live: true });
+  assert.deepEqual(l.paths.sort(), [join(home, 'projects', 'lvd'), join(proj, '.claude', 'projects-hub.json'), join(home, 'session-env', SID)].sort());
+  assert.deepEqual(l.keptDirs, [proj]);
+  await assert.rejects(projectFiles(home, hub, 'lv', []), { code: 'invalid_input' });
+  await forgetProject(hub, 'lv', { live: true });
+  assert.deepEqual(Object.keys(JSON.parse(readFileSync(join(hub, 'registry.json'), 'utf8')).projects), ['orph']);
+  writeFileSync(join(hub, 'registry.json'), JSON.stringify(reg));
   await forgetProject(hub, 'orph');
   const after = JSON.parse(readFileSync(join(hub, 'registry.json'), 'utf8'));
   assert.deepEqual(Object.keys(after.projects), ['live', 'bad', 'other', 'orphShared', 'liveShared']);

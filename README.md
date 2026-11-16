@@ -71,7 +71,7 @@ L'extension ne modifie jamais ce fichier.
 ## Commandes
 
 Toutes sont de catégorie « Claude Hub ». « Rattacher à un projet… », « Détacher ce dossier », « Ignorer ce candidat »,
-« Ignorer l'orphelin », « Copier l'auto-mémoire », « Que faire de cet orphelin ? », « Supprimer la session… » et « Supprimer l'orphelin… » n'existent que dans les menus contextuels des vues, pas dans la
+« Ignorer l'orphelin », « Copier l'auto-mémoire », « Que faire de cet orphelin ? », « Supprimer la session… » et « Supprimer l'orphelin… » et « Supprimer le projet… » n'existent que dans les menus contextuels des vues, pas dans la
 palette de commandes. Un clic sur un orphelin ouvre « Que faire de cet orphelin ? ».
 
 | Commande | Rôle |
@@ -90,7 +90,8 @@ palette de commandes. Un clic sur un orphelin ouvre « Que faire de cet orphelin
 | Que faire de cet orphelin ? | s'ouvre d'un clic sur un orphelin : ce que l'on sait, un conseil et les actions, dont « Indiquer son nouveau dossier… » pour un projet déplacé |
 | Annuler le dernier rattachement | défait les fusions automatiques du dernier scan ; elles ne sont pas refaites au scan suivant |
 | Copier l'auto-mémoire | copie, après confirmation, l'auto-mémoire Claude vers le nouveau dossier ; rien n'est écrasé |
-| Supprimer l'orphelin… | met à la corbeille, après confirmation, les sessions, le dossier Claude (auto-mémoire comprise) et les topics d'un orphelin, puis le retire du hub ; jamais s'il a une session ouverte |
+| Supprimer le projet… | comme « Supprimer l'orphelin… » pour un projet enregistré, plus son fichier marqueur `.claude/projects-hub.json` ; le dossier du projet reste ; double confirmation (récapitulatif, puis saisie du nom exact) |
+| Supprimer l'orphelin… | met à la corbeille, après confirmation, les sessions, le dossier Claude (auto-mémoire comprise) et les topics d'un orphelin, puis le retire du hub, après double confirmation (récapitulatif, puis saisie du nom) ; jamais s'il a une session ouverte |
 | Supprimer la session… | met à la corbeille, après confirmation, les fichiers des sessions sélectionnées (ou d'un projet / orphelin) ; jamais une session ouverte |
 | Rafraîchir les empreintes | recalcule les empreintes git des projets |
 | Aperçu de l'injection | montre le texte que le hook injecte pour ce projet |

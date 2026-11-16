@@ -1,5 +1,10 @@
 # Journal des modifications
 
+## 0.5.0 - 2026-11-16
+
+- Ajouté : commande « Supprimer le projet… » (menu d'un projet enregistré) : comme pour un orphelin, plus le fichier marqueur `.claude/projects-hub.json` ; le dossier du projet n'est jamais supprimé. Un dossier Claude listé par une autre entrée du registre n'est pas touché.
+- Modifié : « Supprimer l'orphelin… » et « Supprimer le projet… » demandent une double confirmation (récapitulatif, puis saisie du nom exact du projet) ; refus avant toute question si une session est ouverte (ADR 0007).
+
 ## 0.4.0 - 2026-11-16
 
 - Ajouté : commande « Supprimer l'orphelin… » (menu de l'orphelin et aide « Que faire de cet orphelin ? ») : sessions, dossier Claude (auto-mémoire comprise) et topics mis à la corbeille après confirmation, puis entrée du registre retirée ; l'entrée reste si un élément n'a pas pu partir (ADR 0007).

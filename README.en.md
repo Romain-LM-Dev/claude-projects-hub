@@ -72,7 +72,7 @@ The extension never modifies this file.
 ## Commands
 
 All belong to the "Claude Hub" category. "Rattacher à un projet…", "Détacher ce dossier", "Ignorer ce candidat",
-"Ignorer l'orphelin", "Copier l'auto-mémoire", "Que faire de cet orphelin ?", "Supprimer la session…" and "Supprimer l'orphelin…" exist only in the views' context menus, not in the command palette. Clicking an orphan opens "Que faire de cet orphelin ?".
+"Ignorer l'orphelin", "Copier l'auto-mémoire", "Que faire de cet orphelin ?", "Supprimer la session…" "Supprimer l'orphelin…" and "Supprimer le projet…" exist only in the views' context menus, not in the command palette. Clicking an orphan opens "Que faire de cet orphelin ?".
 
 | Command | Purpose |
 |---|---|
@@ -90,7 +90,8 @@ All belong to the "Claude Hub" category. "Rattacher à un projet…", "Détacher
 | Que faire de cet orphelin ? | opens when you click an orphan: what is known, advice and the actions, including "Indiquer son nouveau dossier…" for a moved project |
 | Annuler le dernier rattachement | undoes the automatic merges of the last scan; they are not redone on the next scan |
 | Copier l'auto-mémoire | copies Claude auto-memory to the new folder after confirmation; nothing is overwritten |
-| Supprimer l'orphelin… | after confirmation, sends an orphan's sessions, Claude folder (auto-memory included) and topics to the trash, then removes it from the hub; never with an open session |
+| Supprimer le projet… | like "Supprimer l'orphelin…" for a registered project, plus its `.claude/projects-hub.json` marker file; the project folder stays; double confirmation (summary, then typing the exact name) |
+| Supprimer l'orphelin… | after confirmation, sends an orphan's sessions, Claude folder (auto-memory included) and topics to the trash, then removes it from the hub, after a double confirmation (summary, then typing the name); never with an open session |
 | Supprimer la session… | after confirmation, sends the files of the selected sessions (or of a project / orphan) to the trash; never an open session |
 | Rafraîchir les empreintes | recomputes the projects' git fingerprints |
 | Aperçu de l'injection | shows the text the hook injects for this project |

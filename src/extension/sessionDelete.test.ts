@@ -5,12 +5,13 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { sandbox } from '../../test/fixtures/kit.ts';
 
-const S: any = (globalThis as any).__vsd = { cmds: new Map(), warn: undefined as any, warned: [] as any[], infos: [] as string[], errors: [] as string[] };
+const S: any = (globalThis as any).__vsd = { cmds: new Map(), warn: undefined as any, warned: [] as any[], input: undefined as any, inputs: [] as any[], infos: [] as string[], errors: [] as string[] };
 const stub = `const S = globalThis.__vsd;
 export const Uri = { file: (p) => ({ fsPath: p }) };
 export const workspace = { fs: { delete: async () => { throw new Error('real trash must not be used'); } } };
 export const window = {
   showWarningMessage: async (...a) => { S.warned.push(a); return S.warn; },
+  showInputBox: async (o) => { S.inputs.push(o); return S.input; },
   showInformationMessage: async (m) => { S.infos.push(m); },
   showErrorMessage: async (m) => { S.errors.push(m); },
 };
@@ -42,7 +43,7 @@ registerSessionDelete(hub, () => { refreshed.ref++; }, async (u: any) => {
   deleted.push(u.fsPath);
 });
 const run = (...a: any[]) => S.cmds.get('claudeProjectsHub.deleteSessions')(...a);
-const reset = () => { S.warn = undefined; S.warned.length = S.infos.length = S.errors.length = 0; deleted = []; failOn = undefined; };
+const reset = () => { S.warn = undefined; S.input = undefined; S.inputs.length = S.warned.length = S.infos.length = S.errors.length = 0; deleted = []; failOn = undefined; };
 const sNode = (n: number) => ({ kind: 'session', s: sess(n), p: proj });
 
 test('multi-selection: right paths to the deleter, modal question with count and size', async () => {
@@ -89,7 +90,7 @@ test('orphan node: sessions of its claudeDirs from the scan', async () => {
   assert.deepEqual(deleted, [join(home, 'projects', 'old', `${id(5)}.jsonl`)]);
 });
 
-test('deleteOrphan: cancelled, live refusal, success forgets the entry, a failure keeps it', async () => {
+test('deleteOrphan: cancelled at either step, live refusal, success forgets the entry, a failure keeps it', async () => {
   const hh = join(sb.base, 'hubhome');
   const reload = () => writeFileSync(join(hh, 'registry.json'), JSON.stringify({ version: 1, projects: { o: { name: 'o', paths: [], formerPaths: [], claudeDirs: ['old'], dismissed: [], createdAt: 'x' }, p: { name: 'p', paths: ['/p'], formerPaths: [], claudeDirs: [], dismissed: ['o'], createdAt: 'x' } } }));
   mkdirSync(join(hh, 'projects', 'o', 'topics'), { recursive: true });
@@ -100,18 +101,53 @@ test('deleteOrphan: cancelled, live refusal, success forgets the entry, a failur
   const ids = () => Object.keys(JSON.parse(readFileSync(join(hh, 'registry.json'), 'utf8')).projects);
   reload(); reset();
   await del(node);
-  assert.match(S.warned[0][0], /Supprimer l'orphelin « o » \? 1 session\(s\), 0 topic\(s\), 0 note\(s\)/);
+  assert.match(S.warned[0][0], /Supprimer « o » \? Partent à la corbeille : 1 session\(s\) \(0\.0 Mo\), 0 topic\(s\), 0 note\(s\) d'auto-mémoire\. Le hub l'oubliera\. Le dossier du projet n'est pas supprimé\./);
+  assert.equal(S.inputs.length, 0); assert.deepEqual(deleted, []); assert.deepEqual(ids(), ['o', 'p']);
+  reset(); S.warn = 'Continuer…';
+  await del(node); // Escape on the input box
+  assert.equal(S.inputs[0].ignoreFocusOut, true);
+  assert.equal(S.inputs[0].validateInput('o'), undefined); assert.ok(S.inputs[0].validateInput('x'));
+  assert.deepEqual(deleted, []);
+  reset(); S.warn = 'Continuer…'; S.input = 'O';
+  await del(node);
   assert.deepEqual(deleted, []); assert.deepEqual(ids(), ['o', 'p']);
-  reset(); S.warn = "Supprimer l'orphelin"; failOn = 'hubhome';
+  reset(); S.warn = 'Continuer…'; S.input = 'o'; failOn = 'hubhome';
   await del(node);
   assert.equal(deleted.length, 1); assert.deepEqual(ids(), ['o', 'p']);
-  reset(); S.warn = "Supprimer l'orphelin";
+  reset(); S.warn = 'Continuer…'; S.input = 'o';
   await del(node);
   assert.deepEqual(deleted.sort(), [join(home, 'projects', 'old'), join(hh, 'projects', 'o')].sort());
   assert.deepEqual(ids(), ['p']);
   put(`projects/old2/${id(4)}.jsonl`);
-  const live = { ...node, claudeDirs: ['dir'] };
-  reset(); S.warn = "Supprimer l'orphelin";
-  await del(live);
-  assert.match(S.infos[0], /ouverte/); assert.equal(S.warned.length, 0);
+  const orphanIn = (dirs: object) => writeFileSync(join(hh, 'registry.json'), JSON.stringify({ version: 1, projects: { o: { name: 'o', paths: [], formerPaths: [], claudeDirs: ['dir'], dismissed: [], createdAt: 'x' }, ...dirs } }));
+  orphanIn({});
+  reset(); S.warn = 'Continuer…'; S.input = 'o';
+  await del({ ...node, claudeDirs: ['dir'] });
+  assert.match(S.infos[0], /ouverte/); assert.equal(S.warned.length, 0); assert.equal(S.inputs.length, 0);
+  // The open session lives in a Claude folder another project also lists: it is not deleted, so it does not block.
+  orphanIn({ p: { name: 'p', paths: ['/p'], formerPaths: [], claudeDirs: ['dir'], dismissed: [], createdAt: 'x' } });
+  reset(); S.warn = undefined;
+  await del({ ...node, claudeDirs: ['dir'] });
+  assert.equal(S.infos.length, 0); assert.match(S.warned[0][0], /: 0 session\(s\)/);
+});
+
+test('deleteProject: live project loses its marker, never its folder; unregistered refused', async () => {
+  const hh = join(sb.base, 'hubhome2');
+  const dir = join(sb.base, 'work');
+  mkdirSync(join(dir, '.claude'), { recursive: true });
+  writeFileSync(join(dir, '.claude', 'projects-hub.json'), '{"id":"w"}');
+  mkdirSync(hh, { recursive: true });
+  writeFileSync(join(hh, 'registry.json'), JSON.stringify({ version: 1, projects: { w: { name: 'w', paths: [dir], formerPaths: [], claudeDirs: ['old'], dismissed: [], createdAt: 'x' } } }));
+  hub.hubHome = hh;
+  const del = (n: any) => S.cmds.get('claudeProjectsHub.deleteProject')(n);
+  const node = { kind: 'project', p: { id: 'w', name: 'w', info: { cwd: dir, claudeDirs: ['old'], sessions: [sess(5, 'old')] } } };
+  reset();
+  await del({ kind: 'project', p: { name: 't', info: { cwd: 'z', claudeDirs: [], sessions: [] } } });
+  assert.match(S.infos[0], /non enregistré/); assert.equal(S.warned.length, 0);
+  reset(); S.warn = 'Continuer…'; S.input = 'w';
+  await del(node);
+  assert.match(S.warned[0][0], /, le marqueur de /);
+  assert.deepEqual(deleted.sort(), [join(home, 'projects', 'old'), join(dir, '.claude', 'projects-hub.json')].sort());
+  assert.ok(!deleted.includes(dir) && !deleted.includes(join(dir, '.claude')));
+  assert.deepEqual(Object.keys(JSON.parse(readFileSync(join(hh, 'registry.json'), 'utf8')).projects), []);
 });
