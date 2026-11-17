@@ -6,6 +6,7 @@ import { markerFile } from './identity.ts';
 import { HubError } from './paths.ts';
 import { readRegistry, updateRegistry } from './registry.ts';
 import { listTopics } from './store.ts';
+import { l10n } from './l10n.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -19,8 +20,8 @@ async function size(p: string): Promise<number> {
 
 /** Existing files of one session (ADR 0007); telemetry is deliberately excluded. */
 export async function sessionFiles(claudeHome: string, claudeDir: string, sessionId: string): Promise<{ paths: string[]; bytes: number }> {
-  if (!UUID.test(sessionId)) throw new HubError('invalid_input', `identifiant de session invalide : ${sessionId}`);
-  if (!claudeDir || claudeDir === '.' || claudeDir === '..' || /[\\/]/.test(claudeDir)) throw new HubError('invalid_input', `dossier Claude invalide : ${claudeDir}`);
+  if (!UUID.test(sessionId)) throw new HubError('invalid_input', l10n.t("invalid session id: {0}", sessionId));
+  if (!claudeDir || claudeDir === '.' || claudeDir === '..' || /[\\/]/.test(claudeDir)) throw new HubError('invalid_input', l10n.t("invalid Claude folder: {0}", claudeDir));
   const root = resolve(claudeHome);
   const candidates = [
     join(root, 'projects', claudeDir, `${sessionId}.jsonl`),
@@ -31,7 +32,7 @@ export async function sessionFiles(claudeHome: string, claudeDir: string, sessio
   const paths: string[] = [];
   let bytes = 0;
   for (const p of candidates) {
-    if (!p.startsWith(root + sep)) throw new HubError('invalid_input', `chemin hors de CLAUDE_HOME : ${p}`);
+    if (!p.startsWith(root + sep)) throw new HubError('invalid_input', l10n.t("path outside CLAUDE_HOME: {0}", p));
     try { bytes += await size(p); paths.push(p); } catch (e) { if ((e as NodeJS.ErrnoException).code !== 'ENOENT') throw e; }
   }
   return { paths, bytes };
@@ -47,8 +48,8 @@ const badSegment = (d: string) => !d || d === '.' || d === '..' || /[\\/]/.test(
 export async function projectFiles(claudeHome: string, hubHome: string, id: string, sessions: { sessionId: string; claudeDir: string }[], opts: { live?: boolean } = {}): Promise<{ paths: string[]; bytes: number; topics: number; notes: number; keptDirs: string[]; sessionIds: string[] }> {
   const { reg } = await readRegistry(hubHome);
   const entry = Object.hasOwn(reg.projects, id) ? reg.projects[id]! : undefined;
-  if (!entry) throw new HubError('invalid_input', `projet inconnu : ${id}`);
-  if (entry.paths.length && !opts.live) throw new HubError('invalid_input', `${entry.name} a encore un dossier : ce n'est pas un orphelin`);
+  if (!entry) throw new HubError('invalid_input', l10n.t("unknown project: {0}", id));
+  if (entry.paths.length && !opts.live) throw new HubError('invalid_input', l10n.t("{0} still has a folder: it is not an orphan", entry.name));
   // A Claude folder also listed by any other entry stays: trashing it would take that entry's sessions.
   const shared = new Set(Object.entries(reg.projects).filter(([k]) => k !== id).flatMap(([, e]) => e.claudeDirs.map((d) => d.toLowerCase())));
   const own = entry.claudeDirs.filter((cd) => !shared.has(cd.toLowerCase()));
@@ -63,15 +64,15 @@ export async function projectFiles(claudeHome: string, hubHome: string, id: stri
   let notes = 0;
   const dirs: string[] = [];
   for (const cd of own) {
-    if (badSegment(cd)) throw new HubError('invalid_input', `dossier Claude invalide : ${cd}`);
+    if (badSegment(cd)) throw new HubError('invalid_input', l10n.t("invalid Claude folder: {0}", cd));
     const d = resolve(root, 'projects', cd);
-    if (!d.startsWith(root + sep)) throw new HubError('invalid_input', `chemin hors de CLAUDE_HOME : ${d}`);
+    if (!d.startsWith(root + sep)) throw new HubError('invalid_input', l10n.t("path outside CLAUDE_HOME: {0}", d));
     dirs.push(d);
     notes += (await readAutoMemory(join(d, 'memory'))).notes.length;
   }
-  if (!/^[A-Za-z0-9-]+$/.test(id)) throw new HubError('invalid_input', `identifiant de projet invalide : ${id}`);
+  if (!/^[A-Za-z0-9-]+$/.test(id)) throw new HubError('invalid_input', l10n.t("invalid project id: {0}", id));
   const hubDir = resolve(hubRoot, 'projects', id);
-  if (!hubDir.startsWith(hubRoot + sep)) throw new HubError('invalid_input', `chemin hors de HUB_HOME : ${hubDir}`);
+  if (!hubDir.startsWith(hubRoot + sep)) throw new HubError('invalid_input', l10n.t("path outside HUB_HOME: {0}", hubDir));
   const topics = (await listTopics({ hubHome, projectId: id }, 'project')).filter((t) => t.valid).length;
   const markers = opts.live ? entry.paths.map((p) => ({ dir: p, file: markerFile(p) })) : [];
   const paths: string[] = [];
@@ -92,8 +93,8 @@ export const orphanFiles = (claudeHome: string, hubHome: string, id: string, ses
 export async function forgetProject(hubHome: string, id: string, opts: { live?: boolean } = {}): Promise<void> {
   await updateRegistry(hubHome, async (reg) => {
     const e = Object.hasOwn(reg.projects, id) ? reg.projects[id] : undefined;
-    if (!e) throw new HubError('invalid_input', `projet inconnu : ${id}`);
-    if (e.paths.length && !opts.live) throw new HubError('invalid_input', `${e.name} a encore un dossier : ce n'est pas un orphelin`);
+    if (!e) throw new HubError('invalid_input', l10n.t("unknown project: {0}", id));
+    if (e.paths.length && !opts.live) throw new HubError('invalid_input', l10n.t("{0} still has a folder: it is not an orphan", e.name));
     delete reg.projects[id];
     for (const o of Object.values(reg.projects)) o.dismissed = o.dismissed.filter((d) => d !== id);
   });

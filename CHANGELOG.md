@@ -1,5 +1,11 @@
 # Journal des modifications
 
+## 0.7.0 - 2026-11-17
+
+- Ajouté : le hook SessionStart, le serveur MCP (descriptions, réponses, erreurs `ERROR <code>: <message>`), les messages d'erreur du noyau et le journal de diagnostic suivent aussi la langue de VS Code : anglais par défaut, français si VS Code est en français. L'extension écrit la langue dans `~/.claude-projects-hub/settings.json` ; le hook la relit à chaque session, le serveur MCP à son démarrage.
+- Modifié : descriptions du plugin et de la marketplace locale en anglais.
+- Corrigé : les nouvelles versions du hook et du serveur MCP n'atteignaient pas les sessions Claude (Claude Code gardait sa copie 0.1.0 du plugin). `plugin.json` suit désormais la version de l'extension, qui met à jour le plugin à chaque nouvelle version (`claude plugin marketplace update` puis `claude plugin update`), comme « Installer l'intégration Claude ».
+
 ## 0.6.0 - 2026-11-17
 
 - Ajouté : interface en anglais. L'extension suit la langue d'affichage de VS Code : français si VS Code est en français (pack de langue français), anglais sinon. Le texte injecté par le hook, les descriptions des outils MCP et quelques messages d'erreur du noyau restent en français.

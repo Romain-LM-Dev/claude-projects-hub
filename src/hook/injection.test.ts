@@ -7,7 +7,7 @@ const header = buildHeader(projectLabel('demo'));
 
 test('aucun topic : en-tête seul', () => {
   assert.equal(buildInjection(header, [], [], 4000), header);
-  assert.ok(header.includes('Projet : «demo»'));
+  assert.ok(header.includes('Project: “demo”'));
 });
 
 test('100 topics : longueur <= 4000 et pied de page exact', () => {
@@ -16,7 +16,7 @@ test('100 topics : longueur <= 4000 et pied de page exact', () => {
   assert.ok(out.length <= 4000);
   const shown = out.split('\n').filter((l) => l.startsWith('- ')).length;
   assert.ok(shown > 0 && shown < 100);
-  assert.ok(out.endsWith(`… ${100 - shown} autres topics : memory_list`));
+  assert.ok(out.endsWith(`… ${100 - shown} more topics: memory_list`));
 });
 
 test('ligne : tags, date, coupe à 180', () => {
@@ -29,6 +29,6 @@ test('ligne : tags, date, coupe à 180', () => {
 
 test('sections : projet puis global, section vide omise', () => {
   const out = buildInjection(header, [mk(1)], [], 4000);
-  assert.ok(out.includes('### Projet') && !out.includes('### Global'));
+  assert.ok(out.includes('### Project') && !out.includes('### Global'));
   assert.ok(buildInjection(header, [mk(1)], [{ ...mk(2), ref: 'global:g' }], 4000).includes('### Global\n- global:g'));
 });

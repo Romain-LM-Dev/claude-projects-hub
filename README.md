@@ -12,7 +12,7 @@ projet et entre les projets, que Claude lit et écrit par un serveur MCP `hub` e
 
 ## État du projet
 
-Version 0.6.0 (extension et plugin). Licence source-available non commerciale ([LICENSE.md](LICENSE.md)). Voir
+Version 0.7.0 (extension et plugin). Licence source-available non commerciale ([LICENSE.md](LICENSE.md)). Voir
 [CHANGELOG.md](CHANGELOG.md). Point de reprise : `docs/reprise.md`. English: [README.en.md](README.en.md).
 
 ## Fonctionnalités
@@ -27,9 +27,11 @@ Version 0.6.0 (extension et plugin). Licence source-available non commerciale ([
 - **Identité de projet** : la mémoire suit le projet quand son dossier est déplacé ou renommé ; les transcripts et
   l'auto-mémoire Claude orphelins sont rattachés.
 - **Vues VS Code** : conteneur « Claude Hub » avec les vues « Projets » et « Mémoire globale ».
-- **Langue** : l'interface suit la langue d'affichage de VS Code : français si VS Code est en français (pack de
-  langue français), anglais sinon. Le texte injecté par le hook, les descriptions des outils MCP (lus par Claude) et
-  quelques messages d'erreur du noyau restent en français.
+- **Langue** : tout suit la langue d'affichage de VS Code : français si VS Code est en français (pack de langue
+  français), anglais sinon. Cela vaut pour l'interface, les messages d'erreur, le journal de diagnostic et aussi ce
+  que lit Claude (texte injecté par le hook, descriptions et réponses des outils MCP) : l'extension écrit la langue
+  dans `~/.claude-projects-hub/settings.json`, le hook la relit à chaque session et le serveur MCP à son démarrage
+  (sessions Claude à relancer après un changement de langue).
 
 ## Prérequis
 
@@ -50,7 +52,7 @@ Version 0.6.0 (extension et plugin). Licence source-available non commerciale ([
    Claude Code.
 5. « Claude Hub: Retirer l'intégration » désinstalle le plugin.
 
-Après une mise à jour de l'extension, relancer « Installer l'intégration Claude » recopie le plugin.
+Après une mise à jour de l'extension, le plugin est recopié et mis à jour dans Claude Code (`claude plugin update`) ; relancer « Installer l'intégration Claude » fait de même si `claude` n'était pas trouvé. Les sessions Claude ouvertes gardent l'ancienne version jusqu'à leur redémarrage.
 
 ### Règle de permission
 

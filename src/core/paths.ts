@@ -1,5 +1,6 @@
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { l10n } from './l10n.ts';
 
 export type ErrorCode =
   | 'invalid_ref' | 'invalid_input' | 'not_found' | 'exists' | 'conflict'
@@ -37,11 +38,11 @@ export function isValidSlug(slug: unknown): slug is string {
 
 export function parseRef(ref: unknown): Ref {
   const i = typeof ref === 'string' ? ref.indexOf(':') : -1;
-  if (typeof ref !== 'string' || i < 0) throw new HubError('invalid_ref', 'ref attendue : project:<slug> ou global:<slug>');
+  if (typeof ref !== 'string' || i < 0) throw new HubError('invalid_ref', l10n.t("ref expected: project:<slug> or global:<slug>"));
   const scope = ref.slice(0, i);
   const slug = ref.slice(i + 1);
-  if (scope !== 'project' && scope !== 'global') throw new HubError('invalid_ref', `portée inconnue : ${scope}`);
-  if (!isValidSlug(slug)) throw new HubError('invalid_ref', `slug invalide : ${slug}`);
+  if (scope !== 'project' && scope !== 'global') throw new HubError('invalid_ref', l10n.t("unknown scope: {0}", scope));
+  if (!isValidSlug(slug)) throw new HubError('invalid_ref', l10n.t("invalid slug: {0}", slug));
   return { scope, slug };
 }
 
@@ -49,7 +50,7 @@ export function parseRef(ref: unknown): Ref {
 export function topicsDir(home: string, scope: Scope, projectId?: string): string {
   if (scope === 'global') return join(home, 'global', 'topics');
   if (!projectId || !/^[A-Za-z0-9-]+$/.test(projectId)) {
-    throw new HubError('invalid_input', 'project: demande un identifiant de projet valide');
+    throw new HubError('invalid_input', l10n.t("project: needs a valid project id"));
   }
   return join(home, 'projects', projectId, 'topics');
 }

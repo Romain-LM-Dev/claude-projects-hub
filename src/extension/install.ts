@@ -7,7 +7,8 @@ export type Exec = (cmd: string, args: string[]) => Promise<{ stdout: string }>;
 export interface InstallOpts { exec?: Exec; silent?: boolean }
 export type InstallResult = "installed" | "no-claude" | "node-old" | "failed" | "removed";
 
-const PLUGIN = "projects-hub@projects-hub-local";
+const MARKETPLACE = "projects-hub-local";
+const PLUGIN = `projects-hub@${MARKETPLACE}`;
 const KEY = "installedVersion";
 const ASKED = "integrationProposed";
 
@@ -48,6 +49,7 @@ export async function installIntegration(ctx: vscode.ExtensionContext, hubHome: 
   try {
     await run(exec, ["plugin", "marketplace", "add", dest, "--json"]);
     await run(exec, ["plugin", "install", PLUGIN, "--json"]);
+    await refreshPlugin(exec);
   } catch (e) {
     if (missing(e)) {
       say(vscode.l10n.t("Claude Code (`claude`) was not found. In Claude Code, type:\n/plugin marketplace add {0}\n/plugin install {1}", dest, PLUGIN), true);
@@ -64,6 +66,12 @@ export async function installIntegration(ctx: vscode.ExtensionContext, hubHome: 
 // "already installed / already added" is a success.
 async function run(exec: Exec, args: string[]) {
   try { await exec("claude", args); } catch (e) { if (!missing(e) && /already/i.test(text(e))) return; throw e; }
+}
+
+// Claude Code runs its cached copy of the plugin: refresh the marketplace, then the plugin (no-op if its version is unchanged).
+async function refreshPlugin(exec: Exec) {
+  await run(exec, ["plugin", "marketplace", "update", MARKETPLACE]);
+  await run(exec, ["plugin", "update", PLUGIN]);
 }
 
 export async function removeIntegration(ctx: vscode.ExtensionContext, o: InstallOpts = {}): Promise<InstallResult> {
@@ -85,8 +93,12 @@ export function registerInstall(ctx: vscode.ExtensionContext, hubHome: string): 
   if (ctx.extensionMode !== vscode.ExtensionMode.Test) {
     const done = ctx.globalState.get<string>(KEY);
     if (done && done !== version) {
-      // New extension version: refresh the local marketplace copy only; the plugin is then updated by Claude Code.
-      try { copyPlugin(ctx, hubHome); void ctx.globalState.update(KEY, version); } catch { /* best effort */ }
+      // New extension version: new marketplace copy, then Claude Code's plugin cache (plugin.json carries the same version).
+      try {
+        copyPlugin(ctx, hubHome);
+        void ctx.globalState.update(KEY, version);
+        void refreshPlugin(realExec).catch(() => { /* best effort: "Install the Claude integration" does it too */ });
+      } catch { /* best effort */ }
     } else if (!done && !ctx.globalState.get(ASKED)) {
       void ctx.globalState.update(ASKED, true);
       void vscode.window.showInformationMessage(vscode.l10n.t("Install the Claude integration (hub hook and MCP server)?"), vscode.l10n.t("Install")).then((c) => {

@@ -5,6 +5,7 @@ import { ensureProject, findMarker, isExcludedDir, markerFile, resolveProject, t
 import { HubError } from './paths.ts';
 import { readRegistry } from './registry.ts';
 import { attachProject, type MergeRecord } from './relocate.ts';
+import { l10n } from './l10n.ts';
 
 export type OrphanAction = 'attachCandidate' | 'dismiss' | 'relink' | 'deleteSessions';
 export interface OrphanFacts { candidate?: string; sessions: number; topics: number; notes: number; daysIdle?: number }
@@ -26,8 +27,8 @@ export function adviseOrphan(f: OrphanFacts): { action: OrphanAction; reason: Ad
 /** §7.4 « Indiquer son nouveau dossier… ». */
 export async function relinkOrphan(hubHome: string, orphanId: string, dir: string, o: { exclude?: Partial<ExcludeRoots>; log?: Log } = {}):
   Promise<{ kind: 'merged'; record: MergeRecord } | { kind: 'linked'; id: string }> {
-  if (isExcludedDir(dir, hubHome, o.exclude)) throw new HubError('excluded', `dossier exclu : ${dir}`);
-  if (!(await readRegistry(hubHome)).reg.projects[orphanId]) throw new HubError('not_found', 'projet inconnu');
+  if (isExcludedDir(dir, hubHome, o.exclude)) throw new HubError('excluded', l10n.t("excluded folder: {0}", dir));
+  if (!(await readRegistry(hubHome)).reg.projects[orphanId]) throw new HubError('not_found', l10n.t("unknown project"));
   const ens = () => ensureProject(dir, { hubHome, git: true, exclude: o.exclude, log: o.log });
   const r = await resolveProject(dir, { hubHome, exclude: o.exclude });
   if (r.status === 'resolved' && r.id !== orphanId) {
@@ -42,11 +43,11 @@ export async function relinkOrphan(hubHome: string, orphanId: string, dir: strin
       await writeFile(markerFile(root), JSON.stringify({ id: orphanId }) + '\n', { flag: 'wx' });
     } catch (e) {
       // Without the marker, ensureProject would register the folder under a new id: stop, nothing written.
-      if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw new HubError('io', `marqueur impossible à écrire dans ${root} : ${(e as Error).message}`);
+      if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw new HubError('io', l10n.t("cannot write the marker in {0}: {1}", root, (e as Error).message));
     }
   }
   const got = await ens();
-  if (!got) throw new HubError('excluded', `dossier exclu : ${dir}`);
-  if (got.id !== orphanId) throw new HubError('conflict', 'le dossier appartient déjà à un autre projet');
+  if (!got) throw new HubError('excluded', l10n.t("excluded folder: {0}", dir));
+  if (got.id !== orphanId) throw new HubError('conflict', l10n.t("the folder already belongs to another project"));
   return { kind: 'linked', id: got.id };
 }

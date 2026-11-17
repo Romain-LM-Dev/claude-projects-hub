@@ -4,6 +4,7 @@ import { parse, serialize, validate, type Frontmatter } from './frontmatter.ts';
 import { withLock, writeFileAtomic } from './lock.ts';
 import { HubError, isValidSlug, parseRef, topicFile, topicsDir, type Scope } from './paths.ts';
 import { assertNoSecret } from './secrets.ts';
+import { l10n } from './l10n.ts';
 
 export const MAX_BODY = 20_000;
 export const MAX_FILE = 50_000;
@@ -44,7 +45,7 @@ const lf = (s: string) => s.replace(/\r\n?/g, '\n');
 async function readBytes(file: string): Promise<Buffer | null> {
   try { return await readFile(file); } catch (e) {
     if ((e as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    throw new HubError('io', `lecture impossible : ${(e as Error).message}`);
+    throw new HubError('io', l10n.t("read failed: {0}", (e as Error).message));
   }
 }
 
@@ -56,7 +57,7 @@ function locate(ctx: StoreCtx, ref: string) {
 export async function readTopic(ctx: StoreCtx, ref: string): Promise<Topic> {
   const file = locate(ctx, ref);
   const bytes = await readBytes(file);
-  if (!bytes) throw new HubError('not_found', `topic introuvable : ${ref}`);
+  if (!bytes) throw new HubError('not_found', l10n.t("topic not found: {0}", ref));
   const { fm, body } = parse(bytes.toString('utf8'));
   const { mtimeMs } = await stat(file);
   return { ref, title: fm.title, summary: fm.summary, tags: fm.tags, importedFrom: fm.importedFrom, body, mtimeMs, revision: revisionOf(bytes) };
@@ -71,7 +72,7 @@ export async function listTopics(ctx: StoreCtx, scope: Scope | 'all' = 'all'): P
     let names: string[];
     try { names = await readdir(dir); } catch (e) {
       if ((e as NodeJS.ErrnoException).code === 'ENOENT') continue;
-      throw new HubError('io', `lecture impossible : ${(e as Error).message}`);
+      throw new HubError('io', l10n.t("read failed: {0}", (e as Error).message));
     }
     for (const n of names) {
       const slug = n.endsWith('.md') ? n.slice(0, -3) : '';
@@ -107,18 +108,18 @@ export async function writeTopic(ctx: StoreCtx, ref: string, input: WriteInput):
   const fm: Frontmatter = { title: input.title, summary: input.summary, tags: input.tags ?? [], importedFrom: input.importedFrom, extra: [] };
   validate(fm, 'invalid_input');
   const body = lf(input.body);
-  if (body.length > MAX_BODY) throw new HubError('too_large', `corps limité à ${MAX_BODY} caractères`);
+  if (body.length > MAX_BODY) throw new HubError('too_large', l10n.t("body limited to {0} characters", MAX_BODY));
   assertNoSecret([fm.title, fm.summary, fm.tags.join(' '), fm.importedFrom ?? '', body].join('\n'));
 
   return withLock(file, async () => {
     const old = await readBytes(file);
     if (!old) {
-      if (input.baseRevision !== undefined) throw new HubError('not_found', `topic introuvable : ${ref}`);
+      if (input.baseRevision !== undefined) throw new HubError('not_found', l10n.t("topic not found: {0}", ref));
     } else {
       const { fm: prev } = parse(old.toString('utf8'));
       const current = revisionOf(old);
-      if (input.baseRevision === undefined) throw new HubError('exists', `le topic existe déjà (révision ${current}) : passer baseRevision`, current);
-      if (input.baseRevision !== current) throw new HubError('conflict', `révision courante ${current}`, current);
+      if (input.baseRevision === undefined) throw new HubError('exists', l10n.t("the topic already exists (revision {0}): pass baseRevision", current), current);
+      if (input.baseRevision !== current) throw new HubError('conflict', l10n.t("current revision {0}", current), current);
       fm.extra = prev.extra;
       fm.importedFrom ??= prev.importedFrom;
     }
@@ -132,17 +133,17 @@ export async function writeTopic(ctx: StoreCtx, ref: string, input: WriteInput):
 export async function appendTopic(ctx: StoreCtx, ref: string, text: string): Promise<{ ref: string; revision: string }> {
   const file = locate(ctx, ref);
   const t = lf(text);
-  if (t.trim() === '') throw new HubError('invalid_input', 'texte vide');
-  if (t.length > MAX_APPEND) throw new HubError('too_large', `texte limité à ${MAX_APPEND} caractères`);
+  if (t.trim() === '') throw new HubError('invalid_input', l10n.t("empty text"));
+  if (t.length > MAX_APPEND) throw new HubError('too_large', l10n.t("text limited to {0} characters", MAX_APPEND));
   assertNoSecret(t);
 
   return withLock(file, async () => {
     const old = await readBytes(file);
-    if (!old) throw new HubError('not_found', `topic introuvable : ${ref}`);
+    if (!old) throw new HubError('not_found', l10n.t("topic not found: {0}", ref));
     const prev = old.toString('utf8');
     parse(prev); // invalid_file: never rewritten
     const next = `${prev}\n\n### ${new Date().toISOString().slice(0, 16)}Z\n${t}`;
-    if (next.length > MAX_FILE) throw new HubError('too_large', `fichier limité à ${MAX_FILE} caractères`);
+    if (next.length > MAX_FILE) throw new HubError('too_large', l10n.t("file limited to {0} characters", MAX_FILE));
     const content = Buffer.from(next, 'utf8');
     await writeFileAtomic(file, content);
     return { ref, revision: revisionOf(content) };

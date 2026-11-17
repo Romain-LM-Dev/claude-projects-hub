@@ -44,7 +44,7 @@ test('stdin invalide : stdout vide, code 0', () => {
 });
 
 test('BOM en tête de stdin toléré (PowerShell)', () => {
-  assert.ok(run('﻿' + start(join(fakeTmp, 'b'))).ctx.includes('Mémoire partagée'));
+  assert.ok(run('﻿' + start(join(fakeTmp, 'b'))).ctx.includes('Shared memory'));
 });
 
 test('premier puis second SessionStart dans un dépôt neuf', () => {
@@ -55,7 +55,7 @@ test('premier puis second SessionStart dans un dépôt neuf', () => {
   const m1 = readFileSync(marker, 'utf8');
   const id = (JSON.parse(m1) as { id: string }).id;
   assert.ok(registry().projects[id]);
-  assert.ok(r1.ctx.includes('Projet : «p'));
+  assert.ok(r1.ctx.includes('Project: “p'));
   const excl = join(d, '.git', 'info', 'exclude');
   assert.equal(readFileSync(excl, 'utf8').split('\n').filter((l) => l === '/.claude/projects-hub.json').length, 1);
 
@@ -73,16 +73,16 @@ test('topics du projet et globaux injectés', async () => {
   await writeTopic({ hubHome: hub, projectId: id }, 'project:ports', { title: 'Ports', summary: 'Postgres sur 5433', body: 'x', tags: ['docker'] });
   await writeTopic({ hubHome: hub }, 'global:git', { title: 'Git', summary: 'commits en français', body: 'x' });
   const { ctx } = run(start(d));
-  assert.match(ctx, /### Projet\n- project:ports — Ports : Postgres sur 5433 \[docker\]/);
+  assert.match(ctx, /### Project\n- project:ports — Ports : Postgres sur 5433 \[docker\]/);
   assert.match(ctx, /### Global\n- global:git — Git/);
 });
 
-test('cwd dans tmpdir ou home : aucun marqueur ni entrée, « Projet : aucun »', () => {
+test('cwd dans tmpdir ou home : aucun marqueur ni entrée, « Project: none »', () => {
   for (const cwd of [join(fakeTmp, 'x'), env.USERPROFILE!]) {
     mkdirSync(cwd, { recursive: true });
     const r = run(start(cwd));
     assert.equal(r.status, 0);
-    assert.ok(r.ctx.includes('Projet : aucun'));
+    assert.ok(r.ctx.includes('Project: none'));
     assert.ok(!existsSync(join(cwd, '.claude')));
   }
 });
@@ -95,8 +95,8 @@ test('dossier en lecture seule : JSON valide, code 0, ligne dans hook.log', () =
   try {
     const r = run(start(d));
     assert.equal(r.status, 0);
-    assert.ok(r.ctx.includes('Mémoire partagée'));
-    assert.ok(readFileSync(join(hub, 'logs', 'hook.log'), 'utf8').includes('marqueur non écrit'));
+    assert.ok(r.ctx.includes('Shared memory'));
+    assert.ok(readFileSync(join(hub, 'logs', 'hook.log'), 'utf8').includes('marker not written'));
   } finally { restore(); }
 });
 
@@ -107,7 +107,16 @@ test('verrou du registre tenu : « non enregistré » en moins de 1 s, code 0', 
   const r = run(start(proj()), { ...env, CLAUDE_PROJECTS_HUB_HOME: h2 });
   assert.equal(r.status, 0);
   assert.ok(r.ms < 1000, `${r.ms} ms`);
-  assert.ok(r.ctx.includes('Projet : non enregistré'));
+  assert.ok(r.ctx.includes('Project: not registered'));
+});
+
+test('settings.json written by the extension in French: French injection', () => {
+  const h = join(base, 'hub-fr');
+  mkdirSync(h, { recursive: true });
+  writeFileSync(join(h, 'settings.json'), '{"language":"fr"}\n');
+  const r = run(start(proj()), { ...env, CLAUDE_PROJECTS_HUB_HOME: h });
+  assert.ok(r.ctx.startsWith('## Mémoire partagée (projects-hub)\n'), r.ctx);
+  assert.ok(r.ctx.includes('Projet : «p'));
 });
 
 test('durée du hook (moins node -e "") < 150 ms, première session et suivante', () => {

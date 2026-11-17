@@ -10,11 +10,11 @@ A VS Code extension and Claude Code plugin (package `claude-projects-hub`, publi
 Claude Code projects and sessions on the machine and provides topic-based memory, shared across a project's sessions
 and across projects, which Claude reads and writes through an MCP server `hub` and a SessionStart hook.
 
-The interface follows the VS Code display language: English, or French when VS Code is in French (French language pack). The text injected by the hook and the MCP tool descriptions, read by Claude, stay in French, as do a few error messages from the shared core.
+Everything follows the VS Code display language: English, or French when VS Code is in French (French language pack). This covers the interface, error messages, the diagnostics log and also what Claude reads (the text injected by the hook, the MCP tool descriptions and replies): the extension writes the language to `~/.claude-projects-hub/settings.json`, the hook rereads it at each session and the MCP server when it starts (restart Claude sessions after a language change).
 
 ## Project status
 
-Version 0.6.0 (extension and plugin). Non-commercial source-available license ([LICENSE.md](LICENSE.md)).
+Version 0.7.0 (extension and plugin). Non-commercial source-available license ([LICENSE.md](LICENSE.md)).
 See [CHANGELOG.md](CHANGELOG.md). Resume point: `docs/reprise.md`. Français : [README.md](README.md).
 
 ## Features
@@ -48,7 +48,7 @@ See [CHANGELOG.md](CHANGELOG.md). Resume point: `docs/reprise.md`. Français : [
 4. If `claude` is not on the PATH, the command shows two `/plugin …` commands to type in Claude Code instead.
 5. "Claude Hub: Remove the integration" uninstalls the plugin.
 
-After an extension update, running "Install the Claude integration" again recopies the plugin.
+After an extension update, the plugin is recopied and updated in Claude Code (`claude plugin update`); running "Install the Claude integration" again does the same if `claude` was not found. Open Claude sessions keep the old version until they restart.
 
 ### Permission rule
 

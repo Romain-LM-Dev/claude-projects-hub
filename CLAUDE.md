@@ -39,10 +39,11 @@ rend un bilan, sans outil d'édition ni shell.
   racines (`CLAUDE_HOME`, `HUB_HOME`) en paramètre ; `.ps1` en UTF-8 avec BOM.
 - Ne jamais écrire dans `~/.claude` hors architecture §7.5. La règle `mcp__plugin_projects-hub_hub` est ajoutée
   à `~/.claude/settings.json` par l'agent global config-claude après T6, jamais par l'équipe.
-- Code et identifiants en anglais ; docs en français. Interface de l'extension : chaînes anglaises dans le code
-  (`vscode.l10n.t("…")`, littéral entre guillemets doubles ; `%clé%` dans `package.json`), traduction française dans
-  `l10n/bundle.l10n.fr.json` et `package.nls.fr.json` (anglais : `package.nls.json`) ; `src/extension/l10n.test.ts`
-  vérifie les clés. Hook, MCP et erreurs du noyau restent en français.
+- Code et identifiants en anglais ; docs en français. Tout texte affiché ou lu par Claude : chaîne anglaise dans le
+  code, `l10n.t("…")` (littéral entre guillemets doubles) ; `vscode.l10n` dans `src/extension`, `src/core/l10n.ts`
+  dans le noyau, le hook et le MCP ; `%clé%` dans `package.json`. Traduction française dans
+  `l10n/bundle.l10n.fr.json` (un seul fichier pour tous) et `package.nls.fr.json` (anglais : `package.nls.json`) ;
+  `src/extension/l10n.test.ts` vérifie les clés. Langue = celle de VS Code, transmise par `HUB_HOME/settings.json`.
 
 ## À lire en premier
 `docs/reprise.md` (point de reprise), `docs/plan.md` (tâches, vagues), `docs/architecture.md`

@@ -39,6 +39,7 @@ VS Code ── extension.js ──┐                      ┌── hook.js (Se
 HUB_HOME/
   registry.json              identités de projet (§7.1)
   registry.json.bak          copie prise avant chaque fusion (commande Annuler)
+  settings.json              {"language":"fr"|"en"}, langue de VS Code écrite par l'extension (§10)
   global/topics/<slug>.md
   projects/<projectId>/topics/<slug>.md
   cache/sessions-v1.json     index des transcripts (§8.3), jetable
@@ -104,7 +105,7 @@ Liste fermée, testée ; elle ne prétend pas tout détecter (consigne dans la d
 Nom vu par Claude : `mcp__plugin_projects-hub_hub__<outil>` (préfixe confirmé en T6 sur une vraie session
 `claude -p`, Claude Code 2.1.317 ; porté par une constante unique `TOOL_PREFIX`). Projet de la session : `$CLAUDE_PROJECT_DIR` (exporté par Claude Code aux serveurs
 MCP de plugin), sinon `process.cwd()`. Résultats : contenu texte ; erreurs : `isError: true` et texte
-`ERREUR <code> : <message>`. Codes : `invalid_ref`, `invalid_input`, `not_found`, `exists`, `conflict`,
+`ERROR <code>: <message>` (en français : `ERREUR <code> : <message>` ; langue §10). Codes : `invalid_ref`, `invalid_input`, `not_found`, `exists`, `conflict`,
 `too_large`, `secret_detected`, `invalid_file`, `io`, `excluded` (ref `project:` depuis un dossier exclu, §7.3).
 
 Résolution (révisé le 2026-11-11, point e) : le serveur appelle `resolveProject` avant toute ref `project:` (et
@@ -112,24 +113,27 @@ pour l'en-tête de `memory_list`). `excluded` n'est jamais levé par le noyau : 
 `resolveProject` (`status: 'excluded'`) ou `ensureProject` (`null`). Non enregistré : `memory_read` et
 `memory_append` → `not_found` ; `memory_write` → `ensureProject(dir, { git: true })` puis écriture. Résolution en
 échec (registre illisible `invalid_file`, verrou `io`) : code rendu pour une ref `project:` ; `memory_list` affiche
-alors `Projet : non enregistré` et les seuls topics globaux ; les refs `global:` ne dépendent jamais de la résolution.
+alors `Project: not registered` et les seuls topics globaux ; les refs `global:` ne dépendent jamais de la résolution.
 
 | Outil | Entrée | Sortie | Règles |
 |---|---|---|---|
-| `memory_list` | `scope?`: `project`\|`global`\|`all` (défaut `all`) ; `query?`: chaîne (sous-chaîne, sans casse, sur titre, résumé, tags) ; `tag?`: slug | 1re ligne `Projet : <nom> (<id>)` ou `Projet : non enregistré`, puis une ligne par topic au format de l'index (§6.3), 200 max, tri `mtime` décroissant | lecture seule ; projet exclu ou non enregistré : aucun topic projet, jamais d'erreur (`scope: project` compris) |
+| `memory_list` | `scope?`: `project`\|`global`\|`all` (défaut `all`) ; `query?`: chaîne (sous-chaîne, sans casse, sur titre, résumé, tags) ; `tag?`: slug | 1re ligne `Project: <nom> (<id>)` ou `Project: not registered` (français : `Projet : …`), puis une ligne par topic au format de l'index (§6.3), 200 max, tri `mtime` décroissant | lecture seule ; projet exclu ou non enregistré : aucun topic projet, jamais d'erreur (`scope: project` compris) |
 | `memory_read` | `ref` | `ref:`, `title:`, `summary:`, `tags: [a, b]`, `updated:` (ISO), `revision:`, ligne `---`, puis le corps brut | lecture seule |
 | `memory_write` | `ref`, `title`, `summary`, `body`, `tags?`, `baseRevision?` | `ref:`, `revision:`, `created: true\|false` | absent + pas de `baseRevision` = création ; présent = `baseRevision` obligatoire (`exists` sinon) et égale à la révision courante (`conflict` + révision courante sinon) ; `baseRevision` sur un topic absent → `not_found`. Topic projet dans un projet non enregistré (hook en échec) : `ensureProject` d'abord (§7.3) ; dossier exclu : `excluded` |
 | `memory_append` | `ref`, `text` | `ref:`, `revision:` | topic existant (`not_found` sinon) ; ajoute `\n\n### <AAAA-MM-JJTHH:MMZ, UTC>\n<text>` (ex. `### 2026-11-11T09:42Z`) sous verrou, sans conflit possible ; texte vide → `invalid_input` ; `too_large` au-delà de 50 000 car. |
 
 Pas d'outil de suppression en v1 (l'utilisateur supprime depuis la vue, vers la corbeille).
 
-Descriptions des outils (texte fourni à Claude, en français, à reprendre tel quel) :
-- `memory_list` : « Liste les topics de mémoire partagée (projet courant et globaux). »
-- `memory_read` : « Lit un topic complet et sa révision. À faire avant memory_write sur un topic existant. »
-- `memory_write` : « Crée ou remplace un topic. Un topic = un sujet durable (décision, convention, état d'un
-  chantier), résumé en une ligne utile seul. project: = ce projet ; global: = utile à tous les projets. Jamais de
-  secret, de mot de passe ni de donnée client. Pour un topic existant, passer baseRevision lu par memory_read. »
-- `memory_append` : « Ajoute une entrée datée à la fin d'un topic existant, sans risque de conflit entre sessions. »
+Descriptions des outils (texte fourni à Claude, à reprendre tel quel ; anglais = source, français dans
+`l10n/bundle.l10n.fr.json` quand `HUB_HOME/settings.json` porte `fr`, §10) :
+- `memory_list` : « Lists the shared memory topics (current project and global). »
+- `memory_read` : « Reads a full topic and its revision. Do this before memory_write on an existing topic. »
+- `memory_write` : « Creates or replaces a topic. A topic = a lasting subject (decision, convention, state of a
+  piece of work), summarized in one line that is useful on its own. project: = this project; global: = useful to
+  every project. Never secrets, passwords or client data. For an existing topic, pass the baseRevision read by
+  memory_read. »
+- `memory_append` : « Appends a dated entry at the end of an existing topic, with no risk of conflict between
+  sessions. »
 
 ## 6. Hook SessionStart
 
@@ -158,6 +162,9 @@ Forme exec validée par `claude plugin validate` à l'étape T6.
 
 ### 6.3 Texte injecté et budget
 Budget `HOOK_BUDGET = 4000` caractères (limite Claude Code : 10 000 ; au-delà seul un aperçu de 2 000 arrive).
+Langue : celle de `HUB_HOME/settings.json` (§10), anglais par défaut ; exemple en français (en anglais :
+`## Shared memory (projects-hub)`, `Project: “…”`, `### Project`, `… N more topics: memory_list`, et les deux états
+`not registered (the first project: topic creates it)` / `none (temporary or personal folder, global: topics only)`).
 ```
 ## Mémoire partagée (projects-hub)
 Topics partagés entre sessions. Projet : «G_mix-Generateur-Business_Games». Lire : mcp__plugin_projects-hub_hub__memory_read {ref}. Créer ou remplacer : …memory_write ; ajouter : …memory_append ; lister : …memory_list. Écris un topic quand une décision, une convention ou l'état d'un chantier doit survivre à la session ; global = utile à tous les projets, sans secret ni donnée client.
@@ -375,9 +382,13 @@ Commande « Installer l'intégration Claude » (proposée une fois, relançable)
 1. Vérifier `node --version` ≥ 20 sur le PATH ; sinon arrêt avec message.
 2. Copier `claude-plugin/` de l'extension vers `HUB_HOME/marketplace/` (remplacement complet).
 3. `claude plugin marketplace add "<HUB_HOME>\marketplace" --json` puis
-   `claude plugin install projects-hub@projects-hub-local --json` (déjà installé = succès).
+   `claude plugin install projects-hub@projects-hub-local --json` (déjà installé = succès), puis
+   `claude plugin marketplace update projects-hub-local` et `claude plugin update projects-hub@projects-hub-local`.
 4. `claude` introuvable : afficher les deux commandes `/plugin …` à taper dans Claude Code.
-À chaque nouvelle version de l'extension : étape 2 seulement (marketplace locale lue en place, version non figée).
+À chaque nouvelle version de l'extension : étape 2, puis les deux mises à jour de l'étape 3 sans message (révisé le
+2026-11-17 : Claude Code exécute sa copie en cache, `~/.claude/plugins/cache/…/<version>`, rafraîchie seulement
+quand la version de `plugin.json` change ; constat : cache resté en 0.1.0 du 11/11 au 17/11). `plugin.json` porte la
+version de l'extension (`src/extension/manifest.test.ts`).
 Désinstallation : commande « Retirer l'intégration » (`claude plugin uninstall projects-hub@projects-hub-local`).
 Les appels d'outils MCP demandent une permission tant que la règle `mcp__plugin_projects-hub_hub` (préfixe réel
 relevé en T6) n'est pas dans `permissions.allow` de `~/.claude/settings.json`. L'extension ne modifie jamais ce
@@ -403,10 +414,14 @@ Détacher ce dossier, Copier l'auto-mémoire, Rafraîchir les empreintes, Aperç
 l'intégration, Diagnostic (canal de sortie : lignes illisibles, types inconnus, fin des journaux).
 Rafraîchissement : observateurs de fichiers sur `HUB_HOME/**/*.md` et `CLAUDE_HOME/projects/**/*.jsonl`, regroupés
 toutes les 2 s.
-Langue : l'interface de l'extension suit la langue d'affichage de VS Code (`vscode.l10n`, `package.nls`) : chaînes
-anglaises dans le code, traduction française dans `l10n/bundle.l10n.fr.json` et `package.nls.fr.json`. Le noyau ne
-produit pas de texte d'interface (conseil d'orphelin = code `reason`, marqueurs du rendu de session neutres
-`[tool_result]` et `…`), sauf ses messages d'erreur, en français comme le hook et le serveur MCP.
+Langue : tout suit la langue d'affichage de VS Code ; chaînes anglaises dans le code, traduction française dans un
+seul fichier, `l10n/bundle.l10n.fr.json` (et `package.nls.fr.json` pour les menus). Extension : `vscode.l10n.t`.
+Noyau, hook et serveur MCP : `l10n.t` de `src/core/l10n.ts`, même contrat et même fichier (embarqué dans chaque
+bundle), langue du processus fixée au démarrage par `setLanguage`. L'extension la prend dans `vscode.env.language`
+et l'écrit dans `HUB_HOME/settings.json` (`{"language":"fr"}`, réécrit seulement s'il change) ; le hook (à chaque
+session) et le serveur MCP (à son démarrage) la lisent là, anglais si le fichier manque. Conseil d'orphelin : code
+`reason` traduit par l'extension ; marqueurs du rendu de session neutres (`[tool_result]`, `…`). Le format des
+lignes de topic (§6.3) ne dépend pas de la langue.
 
 ## 11. Budgets (mesurés par l'étape indiquée)
 | Mesure | Cible | Étape |
@@ -453,6 +468,7 @@ quand Node manque ; règle de permission posée par l'extension ; CI GitHub Acti
 | 2026-11-11 | j5 | §7.5 | limites de `copyAutoMemory` acceptées |
 | 2026-11-11 | j6 | §7.4 | aucun git sous le verrou du registre (code à changer) |
 | 2026-11-11 | a, b, h | ADR 0005, ADR 0001 | amendements datés |
+| 2026-11-17 | 0.7 | §3, §5, §6.3, §10 | hook, serveur MCP, erreurs du noyau et journal de diagnostic traduits : anglais par défaut, français si VS Code est en français ; langue transmise par `HUB_HOME/settings.json` ; descriptions des outils de référence en anglais ; erreurs `ERROR <code>: <message>` |
 | 2026-11-17 | 0.6 | §10, §8.4 | interface en anglais ou en français selon la langue de VS Code ; `adviseOrphan` rend un code `reason` au lieu d'un texte ; rendu de session : `[tool_result]`, coupe `…`, plus de lien « page suivante » dans le noyau (la navigation reste celle de l'extension) |
 | 2026-11-16 | 0.5.1 | §7.4 | aide « Que faire de cet orphelin ? » : constat et conseil dans une fenêtre modale (texte entier), boutons « action conseillée » et « Autres actions… » |
 | 2026-11-16 | 0.5 | §10, §12, ADR 0007 | « Supprimer le projet… » pour un projet vivant (marqueur compris, jamais son dossier) ; double confirmation (récapitulatif puis nom du projet) pour projet et orphelin ; dossier Claude listé par une autre entrée jamais touché |

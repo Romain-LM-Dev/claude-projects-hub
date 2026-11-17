@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { mkdir, open, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { HubError } from './paths.ts';
+import { l10n } from './l10n.ts';
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -26,13 +27,13 @@ export async function withLock<T>(file: string, fn: () => Promise<T>, opts: Lock
     } catch (e) {
       const code = (e as NodeJS.ErrnoException).code;
       // Windows answers EPERM/EACCES while another process is deleting the lock: wait, as for EEXIST.
-      if (code !== 'EEXIST' && code !== 'EPERM' && code !== 'EACCES') throw new HubError('io', `verrou impossible : ${(e as Error).message}`);
+      if (code !== 'EEXIST' && code !== 'EPERM' && code !== 'EACCES') throw new HubError('io', l10n.t("lock failed: {0}", (e as Error).message));
     }
     try {
       // shortcut: two processes taking over the same stale lock can race, acceptable at 10 s staleness.
       if (Date.now() - (await stat(lockPath)).mtimeMs > staleMs) { await unlink(lockPath).catch(() => {}); continue; }
     } catch { /* lock vanished or unreadable: fall through, so the deadline still applies */ }
-    if (Date.now() >= deadline) throw new HubError('io', `verrou occupé : ${lockPath}`);
+    if (Date.now() >= deadline) throw new HubError('io', l10n.t("lock busy: {0}", lockPath));
     await sleep(25);
   }
   try {
@@ -56,6 +57,6 @@ export async function writeFileAtomic(file: string, content: string | Buffer): P
     }
   } catch (e) {
     await unlink(tmp).catch(() => {});
-    throw new HubError('io', `écriture impossible : ${(e as Error).message}`);
+    throw new HubError('io', l10n.t("write failed: {0}", (e as Error).message));
   }
 }

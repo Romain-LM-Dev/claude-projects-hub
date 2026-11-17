@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { join } from "node:path";
+import { setLanguage, toLang, writeLanguage } from "../core/l10n.ts";
 import { claudeHome, hubHome } from "../core/paths.ts";
 import { setupDiagnostics } from "./diagnostics.ts";
 import { registerOrphanHelp } from "./orphanHelp.ts";
@@ -13,7 +14,11 @@ import { registerTopicCommands } from "./topicCommands.ts";
 import { Hub, TreeProvider } from "./tree.ts";
 
 export function activate(context: vscode.ExtensionContext) {
+  // The core follows VS Code's language; the file carries it to the hook and the MCP server, which run outside VS Code.
+  const lang = toLang(vscode.env.language);
+  setLanguage(lang);
   const hub = new Hub(hubHome(), claudeHome());
+  void writeLanguage(hub.hubHome, lang).catch((e: Error) => hub.log(vscode.l10n.t("language not saved: {0}", e.message)));
   const projects = new TreeProvider(hub, "projects");
   const globalMemory = new TreeProvider(hub, "global");
   const refresh = () => { hub.invalidate(); projects.fire(); globalMemory.fire(); };

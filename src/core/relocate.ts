@@ -13,6 +13,7 @@ import {
   updateRegistry, type ProjectEntry, type Registry,
 } from './registry.ts';
 import { listTopics, revisionOf } from './store.ts';
+import { l10n } from './l10n.ts';
 
 export interface MergeRecord {
   keptId: string;
@@ -72,7 +73,7 @@ async function moveTopics(hub: string, keptId: string, absorbedId: string, moved
         return true;
       });
       if (done) break;
-      if (target === candidates[3]) throw new HubError('exists', `topic déjà présent : ${target}`);
+      if (target === candidates[3]) throw new HubError('exists', l10n.t("topic already exists: {0}", target));
     }
   }
   await rmdir(src).catch(() => {});
@@ -174,7 +175,7 @@ export async function reconcile(projects: ProjectInfo[], o: ReconcileOpts): Prom
         rev ??= await backup(o.hubHome, serializeRegistry(reg)); // in-memory state: includes entries created by this pass
         const rec = await mergeEntries(o.hubHome, reg, oid, certain[0]!, rev);
         result.merges.push(rec);
-        o.log?.(`Projet ${rec.keptName} rattaché à son nouveau dossier`);
+        o.log?.(l10n.t("Project {0} attached to its new folder", rec.keptName));
         continue;
       }
       const names = new Set([O.name, ...O.formerPaths.map((x) => basename(x))].map(lower));
@@ -193,11 +194,11 @@ export async function reconcile(projects: ProjectInfo[], o: ReconcileOpts): Prom
 export async function undoMerge(hubHome: string, recs: MergeRecord | MergeRecord[]): Promise<void> {
   const list = Array.isArray(recs) ? recs : [recs];
   if (!list.length) return;
-  if (list.some((r) => r.backupRevision !== list[0]!.backupRevision)) throw new HubError('conflict', 'fusions de passes différentes : annulation séparée requise');
+  if (list.some((r) => r.backupRevision !== list[0]!.backupRevision)) throw new HubError('conflict', l10n.t("merges from different passes: undo them separately"));
   await withLock(registryFile(hubHome), async () => {
     let bak: Buffer;
-    try { bak = await readFile(registryBackup(hubHome)); } catch { throw new HubError('not_found', 'registry.json.bak introuvable'); }
-    if (revisionOf(bak) !== list[0]!.backupRevision) throw new HubError('conflict', 'registry.json.bak a été réécrit depuis cette fusion : annulation impossible');
+    try { bak = await readFile(registryBackup(hubHome)); } catch { throw new HubError('not_found', l10n.t("registry.json.bak not found")); }
+    if (revisionOf(bak) !== list[0]!.backupRevision) throw new HubError('conflict', l10n.t("registry.json.bak was rewritten since this merge: cannot undo"));
     const restored = JSON.parse(bak.toString('utf8')) as Registry;
     for (const rec of list) {
       const d = restored.projects[rec.keptId]?.dismissed; // the refused pair must not be merged again by the next scan
@@ -210,9 +211,9 @@ export async function undoMerge(hubHome: string, recs: MergeRecord | MergeRecord
 
 /** Manual "Rattacher à un projet…": `keptId` absorbs `absorbedId` (orphan or live). Same merge as automatic, with .bak. */
 export async function attachProject(hubHome: string, keptId: string, absorbedId: string): Promise<MergeRecord> {
-  if (keptId === absorbedId) throw new HubError('invalid_input', 'rattachement d\'un projet à lui-même');
+  if (keptId === absorbedId) throw new HubError('invalid_input', l10n.t("cannot attach a project to itself"));
   return updateRegistry(hubHome, async (reg) => {
-    if (!reg.projects[keptId] || !reg.projects[absorbedId]) throw new HubError('not_found', 'projet inconnu');
+    if (!reg.projects[keptId] || !reg.projects[absorbedId]) throw new HubError('not_found', l10n.t("unknown project"));
     return mergeEntries(hubHome, reg, keptId, absorbedId, await backup(hubHome, serializeRegistry(reg)));
   });
 }
@@ -221,7 +222,7 @@ export async function attachProject(hubHome: string, keptId: string, absorbedId:
 export async function dismiss(hubHome: string, orphanId: string, candidateId: string = orphanId): Promise<void> {
   await updateRegistry(hubHome, async (reg) => {
     const O = reg.projects[orphanId];
-    if (!O) throw new HubError('not_found', 'projet inconnu');
+    if (!O) throw new HubError('not_found', l10n.t("unknown project"));
     if (!O.dismissed.includes(candidateId)) O.dismissed.push(candidateId);
   });
 }
@@ -230,8 +231,8 @@ export async function dismiss(hubHome: string, orphanId: string, candidateId: st
 export async function detachDir(hubHome: string, dir: string): Promise<string> {
   return updateRegistry(hubHome, async (reg) => {
     const from = findByPath(reg, dir);
-    if (!from) throw new HubError('not_found', `dossier non rattaché : ${dir}`);
-    if (!(await readMarker(dir)) && (await findMarker(dir)).id) throw new HubError('invalid_input', "ce dossier n'est pas la racine d'un projet");
+    if (!from) throw new HubError('not_found', l10n.t("folder not attached: {0}", dir));
+    if (!(await readMarker(dir)) && (await findMarker(dir)).id) throw new HubError('invalid_input', l10n.t("this folder is not the root of a project"));
     const k = pathKey(dir);
     const src = reg.projects[from]!;
     const id = randomUUID();
@@ -249,10 +250,10 @@ const encodeDir = (p: string) => p.replace(/[^A-Za-z0-9]/g, '-');
 /** §7.5. Copies absent notes and absent index lines from `fromClaudeDir` to the folder Claude uses for `newPath`. Confirmation is the caller's. */
 export async function copyAutoMemory(claudeHome: string, fromClaudeDir: string, newPath: string): Promise<{ target: string; copied: string[]; indexLinesAdded: number }> {
   const name = encodeDir(newPath);
-  if (name.length > 200) throw new HubError('invalid_input', 'chemin trop long : ouvrez d\'abord une session Claude dans le nouveau dossier');
+  if (name.length > 200) throw new HubError('invalid_input', l10n.t("path too long: first open a Claude session in the new folder"));
   try {
     const s = JSON.parse(await readFile(join(claudeHome, 'settings.json'), 'utf8')) as { autoMemoryDirectory?: unknown };
-    if (s.autoMemoryDirectory) throw new HubError('invalid_input', 'autoMemoryDirectory est réglé : ouvrez d\'abord une session Claude dans le nouveau dossier');
+    if (s.autoMemoryDirectory) throw new HubError('invalid_input', l10n.t("autoMemoryDirectory is set: first open a Claude session in the new folder"));
   } catch (e) { if (e instanceof HubError) throw e; }
   const srcDir = join(claudeHome, 'projects', fromClaudeDir, 'memory');
   const dstDir = join(claudeHome, 'projects', name, 'memory');

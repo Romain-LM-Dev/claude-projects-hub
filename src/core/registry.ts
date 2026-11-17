@@ -3,6 +3,7 @@ import { join, parse, resolve } from 'node:path';
 import type { GitFingerprint } from './git.ts';
 import { withLock, writeFileAtomic, type LockOptions } from './lock.ts';
 import { HubError } from './paths.ts';
+import { l10n } from './l10n.ts';
 
 export interface ProjectEntry {
   name: string;
@@ -43,14 +44,14 @@ export async function readRegistry(hub: string): Promise<{ reg: Registry; raw: s
   let raw: string;
   try { raw = await readFile(registryFile(hub), 'utf8'); } catch (e) {
     if ((e as NodeJS.ErrnoException).code === 'ENOENT') return { reg: emptyRegistry(), raw: null };
-    throw new HubError('io', `lecture impossible : ${(e as Error).message}`);
+    throw new HubError('io', l10n.t("read failed: {0}", (e as Error).message));
   }
   try {
     const reg = JSON.parse(raw) as Registry;
     if (reg.version !== 1 || typeof reg.projects !== 'object' || !reg.projects) throw new Error('forme inattendue');
     return { reg, raw };
   } catch (e) {
-    throw new HubError('invalid_file', `registry.json illisible : ${(e as Error).message}`);
+    throw new HubError('invalid_file', l10n.t("registry.json unreadable: {0}", (e as Error).message));
   }
 }
 

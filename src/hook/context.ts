@@ -1,7 +1,7 @@
 import { ensureProject, resolveProject, type ExcludeRoots } from '../core/identity.ts';
 import { readRegistry } from '../core/registry.ts';
 import { listTopics } from '../core/store.ts';
-import { HOOK_BUDGET, PROJECT_NONE, PROJECT_UNREGISTERED, buildHeader, buildInjection, projectLabel } from './injection.ts';
+import { HOOK_BUDGET, buildHeader, buildInjection, projectLabel, projectNone, projectUnregistered } from './injection.ts';
 
 export interface InjectionOpts {
   hubHome: string;
@@ -32,10 +32,10 @@ export async function injectionFor(dir: string, o: InjectionOpts): Promise<strin
     }
   } else await resolve();
 
-  let project = excluded ? PROJECT_NONE : PROJECT_UNREGISTERED;
+  let project = excluded ? projectNone() : projectUnregistered();
   if (id) {
     let name = id;
-    try { name = (await readRegistry(hub)).reg.projects[id]?.name ?? id; } catch (e) { log(`registre: ${(e as Error).message}`); }
+    try { name = (await readRegistry(hub)).reg.projects[id]?.name ?? id; } catch (e) { log(`readRegistry: ${(e as Error).message}`); }
     project = projectLabel(name);
   }
   const valid = (await listTopics({ hubHome: hub, projectId: id }, 'all')).flatMap((t) => (t.valid ? [t] : []));

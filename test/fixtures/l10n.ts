@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { setLanguage } from '../../src/core/l10n.ts';
 
 const fr: Record<string, string> = JSON.parse(readFileSync(new URL('../../l10n/bundle.l10n.fr.json', import.meta.url), 'utf8'));
 
@@ -11,3 +12,4 @@ export const l10nFr = {
   },
 };
 (globalThis as any).__l10nFr = l10nFr;
+setLanguage('fr'); // core messages too, as with VS Code in French

@@ -1,3 +1,5 @@
+import { l10n } from '../core/l10n.ts';
+
 export const TOOL_PREFIX = 'mcp__plugin_projects-hub_hub__';
 export const HOOK_BUDGET = 4000;
 const MAX_LINE = 180;
@@ -16,16 +18,14 @@ export function formatTopicLine(t: TopicLine): string {
   return line.length > MAX_LINE ? line.slice(0, MAX_LINE - 1) + '…' : line;
 }
 
-/** `project` is a display name, or one of the two fixed states below. */
-export const PROJECT_UNREGISTERED = 'non enregistré (le premier topic project: le crée)';
-export const PROJECT_NONE = 'aucun (dossier temporaire ou personnel, topics global: seulement)';
-export const projectLabel = (name: string) => `«${name}»`;
+/** `project` is a display name, or one of the two fixed states below (functions: the language is set at start-up). */
+export const projectUnregistered = () => l10n.t("not registered (the first project: topic creates it)");
+export const projectNone = () => l10n.t("none (temporary or personal folder, global: topics only)");
+export const projectLabel = (name: string) => l10n.t("“{0}”", name);
 
 export function buildHeader(project: string): string {
-  const t = (n: string) => `${TOOL_PREFIX}${n}`;
-  return `## Mémoire partagée (projects-hub)\n` +
-    `Topics partagés entre sessions. Projet : ${project}. Lire : ${t('memory_read')} {ref}. Créer ou remplacer : …memory_write ; ajouter : …memory_append ; lister : …memory_list. ` +
-    `Écris un topic quand une décision, une convention ou l'état d'un chantier doit survivre à la session ; global = utile à tous les projets, sans secret ni donnée client.`;
+  return l10n.t("## Shared memory (projects-hub)\nTopics shared between sessions. Project: {0}. Read: {1} {ref}. Create or replace: …memory_write; append: …memory_append; list: …memory_list. Write a topic when a decision, a convention or the state of a piece of work must outlive the session; global = useful to every project, no secrets or client data.",
+    project, `${TOOL_PREFIX}memory_read`);
 }
 
 /** Pure: header, then project lines, then global lines, as many as fit in `budget` (footer counted). */
@@ -35,10 +35,10 @@ export function buildInjection(header: string, projectTopics: TopicLine[], globa
     const parts = [header];
     for (const s of [0, 1] as const) {
       const lines = all.slice(0, n).filter(([k]) => k === s).map(([, t]) => formatTopicLine(t));
-      if (lines.length) parts.push(s ? '### Global' : '### Projet', ...lines);
+      if (lines.length) parts.push(s ? '### Global' : l10n.t("### Project"), ...lines);
     }
     const rest = all.length - n;
-    if (rest > 0) parts.push(`… ${rest} autres topics : memory_list`);
+    if (rest > 0) parts.push(l10n.t("… {0} more topics: memory_list", rest));
     return parts.join('\n');
   };
   let n = 0;

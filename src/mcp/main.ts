@@ -1,6 +1,7 @@
 import { appendFileSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { readLanguage, setLanguage } from '../core/l10n.ts';
 import { hubHome } from '../core/paths.ts';
 import { createServer, sessionDir } from './tools.ts';
 
@@ -19,6 +20,7 @@ function makeLog(hub: string) {
 
 const hub = hubHome();
 const log = makeLog(hub);
+setLanguage(readLanguage(hub)); // read once: tool descriptions are sent at start-up
 createServer({ hubHome: hub, projectDir: sessionDir(process.env, process.cwd()), log })
   .connect(new StdioServerTransport())
   .catch((e: Error) => { log(`connect: ${e.message}`); process.exit(1); });

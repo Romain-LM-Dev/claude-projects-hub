@@ -1,5 +1,6 @@
 import { appendFileSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { readLanguage, setLanguage } from '../core/l10n.ts';
 import { hubHome } from '../core/paths.ts';
 import { injectionFor } from './context.ts';
 
@@ -28,6 +29,7 @@ function readStdin(timeoutMs: number): Promise<string> {
 async function main() {
   const hub = hubHome();
   const log = makeLog(hub);
+  setLanguage(readLanguage(hub));
   try {
     let input: unknown;
     try { input = JSON.parse((await readStdin(1000)).replace(/^﻿/, '')); } catch { return; }

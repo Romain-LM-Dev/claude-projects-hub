@@ -1,4 +1,5 @@
 import { HubError } from './paths.ts';
+import { l10n } from './l10n.ts';
 
 // Closed list (architecture §4.4); does not claim to detect everything.
 export const SECRET_PATTERNS: { name: string; re: RegExp }[] = [
@@ -17,5 +18,5 @@ export function findSecret(text: string): string | null {
 
 export function assertNoSecret(text: string): void {
   const name = findSecret(text);
-  if (name) throw new HubError('secret_detected', `secret probable détecté (${name}) : texte refusé`);
+  if (name) throw new HubError('secret_detected', l10n.t("probable secret detected ({0}): text refused", name));
 }

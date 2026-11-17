@@ -1,6 +1,6 @@
 {
   "name": "projects-hub",
-  "version": "0.1.0",
+  "version": "0.7.0",
   "author": { "name": "romain-lm-dev" },
-  "description": "Mémoire de topics partagée entre les projets : index injecté au démarrage de session et serveur MCP hub."
+  "description": "Topic memory shared across projects: index injected at session start and hub MCP server (English or French, following VS Code)."
 }

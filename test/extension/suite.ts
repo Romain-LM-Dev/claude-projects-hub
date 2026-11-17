@@ -186,6 +186,8 @@ async function installSuite() {
     ["node", ["--version"]],
     ["claude", ["plugin", "marketplace", "add", dest, "--json"]],
     ["claude", ["plugin", "install", "projects-hub@projects-hub-local", "--json"]],
+    ["claude", ["plugin", "marketplace", "update", "projects-hub-local"]],
+    ["claude", ["plugin", "update", "projects-hub@projects-hub-local"]],
   ]);
 
   const already = fake((c) => (c === "claude" ? new Error("Plugin already installed") : undefined));

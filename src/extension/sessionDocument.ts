@@ -31,7 +31,7 @@ export class SessionDocuments implements vscode.TextDocumentContentProvider, vsc
       const file = r.agentId ? join(base, r.sessionId, "subagents", `agent-${r.agentId}.jsonl`) : join(base, `${r.sessionId}.jsonl`);
       const t0 = Date.now();
       const { markdown, hasNext } = await renderSessionPage(file, r.page);
-      this.log(`document ${r.sessionId}${r.agentId ? "/" + r.agentId : ""} page ${r.page} : ${Date.now() - t0} ms`);
+      this.log(vscode.l10n.t("document {0} page {1}: {2} ms", r.sessionId + (r.agentId ? "/" + r.agentId : ""), r.page, Date.now() - t0));
       const nav = [r.page > 1 && `[${vscode.l10n.t("← previous page")}](${uriOf(r, r.page - 1)})`, hasNext && `[${vscode.l10n.t("next page →")}](${uriOf(r, r.page + 1)})`].filter(Boolean).join(" · ");
       return `# ${vscode.l10n.t("Session {0} - page {1}", r.sessionId, r.page)}\n\n${nav}\n\n${markdown}\n\n${nav}\n`;
     } catch (e) {

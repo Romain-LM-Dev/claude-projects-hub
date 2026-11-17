@@ -45,7 +45,7 @@ export class Hub {
     // A failed scan must not stay cached: the next get() retries.
     p.catch((e: Error) => {
       if (this.data === p) this.data = undefined;
-      this.log(`scan : ${e.message}`);
+      this.log(vscode.l10n.t("scan: {0}", e.message));
       void vscode.window.showErrorMessage(vscode.l10n.t("Claude Hub: scan failed: {0}", e.message));
     });
     return p;
@@ -55,12 +55,12 @@ export class Hub {
     const t0 = Date.now();
     const { projects, sessions } = await scanClaudeData(this.claudeHome, { cachePath: this.cachePath });
     let reloc: ReconcileResult = { merges: [], proposals: [], orphans: [] };
-    try { reloc = await reconcile(projects, { hubHome: this.hubHome, log: this.log }); } catch (e) { this.log(`rapprochement : ${(e as Error).message}`); }
+    try { reloc = await reconcile(projects, { hubHome: this.hubHome, log: this.log }); } catch (e) { this.log(vscode.l10n.t("reconciliation: {0}", (e as Error).message)); }
     const reg = (await readRegistry(this.hubHome).catch(() => ({ reg: emptyRegistry() }))).reg;
     const out: Data = { projects: [], temp: [], reg, reloc };
     for (const info of projects) {
       const r = await resolveProject(info.cwd, { hubHome: this.hubHome }).catch((e: Error) => {
-        this.log(`projet ${info.cwd} non résolu : ${e.message}`);
+        this.log(vscode.l10n.t("project {0} not resolved: {1}", info.cwd, e.message));
         return { status: "unregistered" as const };
       });
       const id = r.status === "resolved" ? r.id : undefined;
@@ -69,7 +69,7 @@ export class Hub {
     }
     const recent = (p: Proj) => p.info.sessions[0]?.mtimeMs ?? 0;
     out.projects.sort((a, b) => recent(b) - recent(a));
-    this.log(`scan : ${projects.length} projets, ${sessions.length} sessions en ${Date.now() - t0} ms`);
+    this.log(vscode.l10n.t("scan: {0} projects, {1} sessions in {2} ms", projects.length, sessions.length, Date.now() - t0));
     this.onReconcile(reloc);
     return out;
   }

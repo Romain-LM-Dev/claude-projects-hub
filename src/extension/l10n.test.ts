@@ -10,8 +10,10 @@ const holes = (s: string) => (s.match(/\{\d+\}/g) ?? []).sort().join();
 test('every vscode.l10n.t literal has a French translation with the same placeholders, and no key is stale', () => {
   const fr = json('l10n/bundle.l10n.fr.json');
   const used = new Set<string>();
-  for (const f of readdirSync(import.meta.dirname).filter((x) => x.endsWith('.ts') && !x.endsWith('.test.ts'))) {
-    const src = readFileSync(join(import.meta.dirname, f), 'utf8');
+  // One bundle for all: vscode.l10n in the extension, core/l10n.ts in the core, the hook and the MCP server.
+  const files = ['extension', 'core', 'hook', 'mcp'].flatMap((d) => readdirSync(join(root, 'src', d)).filter((x) => x.endsWith('.ts') && !x.endsWith('.test.ts')).map((x) => join(root, 'src', d, x)));
+  for (const f of files) {
+    const src = readFileSync(f, 'utf8');
     // A non-literal key could not be checked here, nor found by the bundle.
     assert.ok(!/l10n\.t\((?!")/.test(src), `${f}: l10n.t takes a double-quoted literal`);
     for (const m of src.matchAll(/l10n\.t\("((?:[^"\\]|\\.)*)"/g)) used.add(JSON.parse(`"${m[1]}"`));

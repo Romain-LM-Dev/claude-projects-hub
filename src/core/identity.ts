@@ -6,6 +6,7 @@ import { dirname, join, resolve, sep } from 'node:path';
 import { gitFingerprint } from './git.ts';
 import { claudeHome as defaultClaudeHome } from './paths.ts';
 import { findByPath, isDriveRoot, newEntry, pathKey, readRegistry, updateRegistry } from './registry.ts';
+import { l10n } from './l10n.ts';
 
 export interface ExcludeRoots { claudeHome: string; hubHome: string; tmpDir: string; homeDir: string }
 export type Log = (msg: string) => void;
@@ -107,7 +108,7 @@ export async function ensureProject(dir: string, o: EnsureOpts): Promise<{ id: s
       try { await mkdir(dirname(markerFile(root)), { recursive: true }); await writeFile(markerFile(root), JSON.stringify({ id }) + '\n', { flag: 'wx' }); } catch (e) {
         const code = (e as NodeJS.ErrnoException).code;
         const other = code === 'EEXIST' ? await readMarker(root) : undefined;
-        if (other) id = other; else log(`marqueur non écrit (${code ?? (e as Error).message}) : ${root}`);
+        if (other) id = other; else log(l10n.t("marker not written ({0}): {1}", code ?? (e as Error).message, root));
       }
     }
     const entry = (reg.projects[id] ??= newEntry(root));
@@ -117,6 +118,6 @@ export async function ensureProject(dir: string, o: EnsureOpts): Promise<{ id: s
     if (!entry.paths.some((x) => pathKey(x) === k)) entry.paths.push(root);
     return id;
   }, { timeoutMs: o.lockTimeoutMs });
-  if (existsSync(join(root, '.git'))) await addExcludeLine(root).catch((e) => log(`info/exclude non modifié : ${(e as Error).message}`));
+  if (existsSync(join(root, '.git'))) await addExcludeLine(root).catch((e) => log(l10n.t("info/exclude not changed: {0}", (e as Error).message)));
   return { id, root };
 }

@@ -23,11 +23,11 @@ export function setupDiagnostics(hub: Hub): vscode.Disposable[] {
     const stats: ScanStats = { types: {}, bytesRead: 0 };
     const t0 = Date.now();
     const { sessions, dirCount } = await scanClaudeData(hub.claudeHome, { cachePath: hub.cachePath, stats });
-    hub.log(`diagnostic : ${dirCount} dossiers, ${sessions.length} sessions, ${stats.bytesRead} octets lus, ${Date.now() - t0} ms`);
-    hub.log(`types de lignes : ${JSON.stringify(stats.types)}`);
-    for (const s of sessions.filter((x) => x.parseErrors > 0)) hub.log(`lignes illisibles : ${s.parseErrors} dans ${s.file}`);
+    hub.log(vscode.l10n.t("diagnostics: {0} folders, {1} sessions, {2} bytes read, {3} ms", dirCount, sessions.length, stats.bytesRead, Date.now() - t0));
+    hub.log(vscode.l10n.t("line types: {0}", JSON.stringify(stats.types)));
+    for (const s of sessions.filter((x) => x.parseErrors > 0)) hub.log(vscode.l10n.t("unreadable lines: {0} in {1}", s.parseErrors, s.file));
     const latest = sessions.reduce<(typeof sessions)[number] | undefined>((a, s) => (!a || s.mtimeMs > a.mtimeMs ? s : a), undefined);
-    if (latest) for (const l of await tail(latest.file)) hub.log(`fin de ${latest.sessionId} : ${l}`);
+    if (latest) for (const l of await tail(latest.file)) hub.log(vscode.l10n.t("end of {0}: {1}", latest.sessionId, l));
   });
   return [out, cmd];
 }
