@@ -1,5 +1,10 @@
 # Journal des modifications
 
+## 0.6.0 - 2026-11-17
+
+- Ajouté : interface en anglais. L'extension suit la langue d'affichage de VS Code : français si VS Code est en français (pack de langue français), anglais sinon. Le texte injecté par le hook, les descriptions des outils MCP et quelques messages d'erreur du noyau restent en français.
+- Modifié : document de session : résultats d'outils marqués `[tool_result]`, texte coupé marqué `…` ; le lien « page suivante » en double en bas de page est retiré.
+
 ## 0.5.1 - 2026-11-16
 
 - Modifié : « Que faire de cet orphelin ? » affiche ce que l'on sait et le conseil dans une fenêtre, sans texte coupé ; boutons : l'action conseillée ou « Autres actions… » (liste des actions, détails raccourcis).

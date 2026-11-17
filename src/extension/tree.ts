@@ -46,7 +46,7 @@ export class Hub {
     p.catch((e: Error) => {
       if (this.data === p) this.data = undefined;
       this.log(`scan : ${e.message}`);
-      void vscode.window.showErrorMessage(`Claude Hub : scan impossible : ${e.message}`);
+      void vscode.window.showErrorMessage(vscode.l10n.t("Claude Hub: scan failed: {0}", e.message));
     });
     return p;
   }
@@ -91,7 +91,7 @@ function describe(s: SessionSummary): string {
     new Date(when).toLocaleString(),
     s.entrypoint,
     s.costUsd !== undefined ? `$${s.costUsd.toFixed(2)}` : undefined,
-    s.live ? "en cours" : undefined,
+    s.live ? vscode.l10n.t("running") : undefined,
   ].filter(Boolean).join(" · ");
 }
 
@@ -162,54 +162,54 @@ export class TreeProvider implements vscode.TreeDataProvider<Node> {
     switch (n.kind) {
       case "project": {
         const it = mk(n.p.name, n.open ? C.Expanded : C.Collapsed, "project");
-        it.description = n.open ? "projet ouvert" : n.p.info.cwd;
+        it.description = n.open ? vscode.l10n.t("open project") : n.p.info.cwd;
         it.tooltip = n.p.info.cwd;
         return it;
       }
-      case "temp": return mk(`Temporaires (${n.items.length})`, C.Collapsed, "temp");
-      case "proposals": return mk(`À rattacher (${n.items.length})`, C.Expanded, "proposals");
-      case "orphans": return mk(`Orphelins (${n.items.length})`, C.Collapsed, "orphans");
+      case "temp": return mk(vscode.l10n.t("Temporary ({0})", n.items.length), C.Collapsed, "temp");
+      case "proposals": return mk(vscode.l10n.t("To attach ({0})", n.items.length), C.Expanded, "proposals");
+      case "orphans": return mk(vscode.l10n.t("Orphans ({0})", n.items.length), C.Collapsed, "orphans");
       case "proposal": {
         const it = mk(`${n.orphan} → ${n.candidate}`, C.None, "proposal");
-        it.description = n.pr.reason === "root-commit" ? "même historique git" : "même nom de dossier";
+        it.description = n.pr.reason === "root-commit" ? vscode.l10n.t("same git history") : vscode.l10n.t("same folder name");
         return it;
       }
       case "orphan": {
         const it = mk(n.name, C.None, "orphan");
-        it.description = "dossier introuvable";
-        it.command = { command: "claudeProjectsHub.orphanHelp", title: "Que faire de cet orphelin ?", arguments: [n] };
+        it.description = vscode.l10n.t("folder not found");
+        it.command = { command: "claudeProjectsHub.orphanHelp", title: vscode.l10n.t("What to do with this orphan?"), arguments: [n] };
         return it;
       }
-      case "memory": return mk(`Mémoire (${n.items.length})`, n.items.length ? C.Collapsed : C.None, "memoryGroup");
-      case "auto": return mk(`Auto-mémoire Claude (${n.items.length})`, n.items.length ? C.Collapsed : C.None, "autoGroup");
-      case "sessions": return mk(`Sessions (${n.p.info.sessions.length})`, C.Collapsed, "sessionsGroup");
+      case "memory": return mk(vscode.l10n.t("Memory ({0})", n.items.length), n.items.length ? C.Collapsed : C.None, "memoryGroup");
+      case "auto": return mk(vscode.l10n.t("Claude auto-memory ({0})", n.items.length), n.items.length ? C.Collapsed : C.None, "autoGroup");
+      case "sessions": return mk(vscode.l10n.t("Sessions ({0})", n.p.info.sessions.length), C.Collapsed, "sessionsGroup");
       case "topic": {
         const e = n.entry;
         const it = mk(e.valid ? e.title : e.ref, C.None, "topic");
-        it.description = e.valid ? e.ref : `illisible : ${e.error}`;
+        it.description = e.valid ? e.ref : vscode.l10n.t("unreadable: {0}", e.error);
         it.tooltip = e.valid ? e.summary : e.error;
-        it.command = { command: "vscode.open", title: "Ouvrir", arguments: [topicUri(this.hub, e.ref, n.projectId)] };
+        it.command = { command: "vscode.open", title: vscode.l10n.t("Open"), arguments: [topicUri(this.hub, e.ref, n.projectId)] };
         return it;
       }
       case "note": {
         const it = mk(n.note.name ?? basename(n.note.file), C.None, "note");
         it.description = n.note.type;
         it.tooltip = n.note.description;
-        it.command = { command: "vscode.open", title: "Ouvrir", arguments: [vscode.Uri.file(n.note.file)] };
+        it.command = { command: "vscode.open", title: vscode.l10n.t("Open"), arguments: [vscode.Uri.file(n.note.file)] };
         return it;
       }
       case "session": {
         const s = n.s;
         const it = mk(s.title || s.sessionId, s.subagents.length ? C.Collapsed : C.None, "session");
         it.description = describe(s);
-        it.tooltip = [s.cwd, s.gitBranch && `branche ${s.gitBranch}`, s.version && `version ${s.version}`].filter(Boolean).join("\n");
-        it.command = { command: "claudeProjectsHub.openSession", title: "Ouvrir la session", arguments: [sessionUri(s)] };
+        it.tooltip = [s.cwd, s.gitBranch && vscode.l10n.t("branch {0}", s.gitBranch), s.version && vscode.l10n.t("version {0}", s.version)].filter(Boolean).join("\n");
+        it.command = { command: "claudeProjectsHub.openSession", title: vscode.l10n.t("Open session"), arguments: [sessionUri(s)] };
         return it;
       }
       case "subagent": {
         const it = mk(n.a.description || n.a.id, C.None, "subagent");
         it.description = n.a.agentType;
-        it.command = { command: "claudeProjectsHub.openSession", title: "Ouvrir le sous-agent", arguments: [sessionUri(n.s, n.a)] };
+        it.command = { command: "claudeProjectsHub.openSession", title: vscode.l10n.t("Open subagent"), arguments: [sessionUri(n.s, n.a)] };
         return it;
       }
     }

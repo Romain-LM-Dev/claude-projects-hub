@@ -9,21 +9,22 @@ const encodeDir = (p: string) => p.replace(/[^A-Za-z0-9]/g, "-").toLowerCase();
 
 export function registerRelocation(hub: Hub, refresh: () => void): { state: Relocation; disposables: vscode.Disposable[] } {
   const state: Relocation = { lastMerges: [] };
-  const fail = (e: unknown) => void vscode.window.showErrorMessage(`Claude Hub : ${(e as Error).message}`);
+  const fail = (e: unknown) => void vscode.window.showErrorMessage(vscode.l10n.t("Claude Hub: {0}", (e as Error).message));
   const run = async (fn: () => Promise<unknown>) => { try { await fn(); } catch (e) { fail(e); } refresh(); };
 
   const announce = (recs: MergeRecord[]) => {
     if (!recs.length) return;
     state.lastMerges = recs;
-    const msg = `Projet ${recs.map((r) => r.keptName).join(", ")} rattaché à son nouveau dossier`;
-    void vscode.window.showInformationMessage(msg, "Annuler").then((c) => c === "Annuler" ? vscode.commands.executeCommand("claudeProjectsHub.undoMerge", recs) : undefined);
+    const msg = vscode.l10n.t("Project {0} attached to its new folder", recs.map((r) => r.keptName).join(", "));
+    const undo = vscode.l10n.t("Undo");
+    void vscode.window.showInformationMessage(msg, undo).then((c) => c === undo ? vscode.commands.executeCommand("claudeProjectsHub.undoMerge", recs) : undefined);
   };
   const seen = new Set<string>();
   hub.onReconcile = (r: ReconcileResult) => {
     announce(r.merges);
     const fresh = r.proposals.filter((p) => !seen.has(`${p.orphanId}>${p.candidateId}`));
     fresh.forEach((p) => seen.add(`${p.orphanId}>${p.candidateId}`));
-    if (fresh.length) void vscode.window.showInformationMessage(`Claude Hub : ${fresh.length} projet(s) à rattacher (nœud « À rattacher »).`);
+    if (fresh.length) void vscode.window.showInformationMessage(vscode.l10n.t("Claude Hub: {0} project(s) to attach (see “To attach”).", fresh.length));
   };
 
   const pickProject = async (title: string, except?: string) => {
@@ -41,8 +42,8 @@ export function registerRelocation(hub: Hub, refresh: () => void): { state: Relo
         if (n?.kind === "proposal") announce([await attachProject(hub.hubHome, n.pr.orphanId, n.pr.candidateId)]);
         else if (n?.kind === "project" || n?.kind === "orphan") {
           const keptId = n.kind === "orphan" ? n.id : n.p.id;
-          if (!keptId) throw new Error("projet non enregistré : ouvrez-y une session ou rafraîchissez");
-          const other = await pickProject("Projet à rattacher à celui-ci", keptId);
+          if (!keptId) throw new Error(vscode.l10n.t("project not registered: open a session in it or refresh"));
+          const other = await pickProject(vscode.l10n.t("Project to attach to this one"), keptId);
           if (other?.id) announce([await attachProject(hub.hubHome, keptId, other.id)]);
         }
       })),
@@ -55,7 +56,7 @@ export function registerRelocation(hub: Hub, refresh: () => void): { state: Relo
       // Without argument: undoes the merges of the last pass (the next scan merges again unless the pair is dismissed: core limit, entries created in the pass are not in the .bak).
       cmd("undoMerge", (arg?: MergeRecord[]) => run(async () => {
         const recs = Array.isArray(arg) ? arg : state.lastMerges;
-        if (!recs.length) { void vscode.window.showInformationMessage("Claude Hub : aucun rattachement à annuler."); return; }
+        if (!recs.length) { void vscode.window.showInformationMessage(vscode.l10n.t("Claude Hub: no attachment to undo.")); return; }
         await undoMerge(hub.hubHome, recs);
         state.lastMerges = [];
       })),
@@ -74,15 +75,16 @@ export function registerRelocation(hub: Hub, refresh: () => void): { state: Relo
             to = reg.projects[n.pr.candidateId]?.paths[0];
           } else if (n?.kind === "orphan") {
             from = n.claudeDirs;
-            to = (await pickProject("Copier l'auto-mémoire vers le dossier de…", n.id))?.info.cwd;
+            to = (await pickProject(vscode.l10n.t("Copy the auto-memory to the folder of…"), n.id))?.info.cwd;
           }
           if (!to || !from.length) return;
-          const ok = preset?.confirm || await vscode.window.showWarningMessage(`Copier l'auto-mémoire Claude vers ${to} ? Aucun fichier existant n'est écrasé.`, { modal: true }, "Copier") === "Copier";
+          const copy = vscode.l10n.t("Copy");
+          const ok = preset?.confirm || await vscode.window.showWarningMessage(vscode.l10n.t("Copy the Claude auto-memory to {0}? No existing file is overwritten.", to), { modal: true }, copy) === copy;
           if (!ok) return;
           const results = [];
           for (const d of from) results.push(await copyAutoMemory(hub.claudeHome, d, to));
           const files = results.reduce((s, r) => s + r.copied.length, 0);
-          void vscode.window.showInformationMessage(`Claude Hub : ${files} note(s) copiée(s) vers ${to}.`);
+          void vscode.window.showInformationMessage(vscode.l10n.t("Claude Hub: {0} note(s) copied to {1}.", files, to));
           refresh();
           return results;
         } catch (e) { fail(e); }

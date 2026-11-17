@@ -403,6 +403,10 @@ Détacher ce dossier, Copier l'auto-mémoire, Rafraîchir les empreintes, Aperç
 l'intégration, Diagnostic (canal de sortie : lignes illisibles, types inconnus, fin des journaux).
 Rafraîchissement : observateurs de fichiers sur `HUB_HOME/**/*.md` et `CLAUDE_HOME/projects/**/*.jsonl`, regroupés
 toutes les 2 s.
+Langue : l'interface de l'extension suit la langue d'affichage de VS Code (`vscode.l10n`, `package.nls`) : chaînes
+anglaises dans le code, traduction française dans `l10n/bundle.l10n.fr.json` et `package.nls.fr.json`. Le noyau ne
+produit pas de texte d'interface (conseil d'orphelin = code `reason`, marqueurs du rendu de session neutres
+`[tool_result]` et `…`), sauf ses messages d'erreur, en français comme le hook et le serveur MCP.
 
 ## 11. Budgets (mesurés par l'étape indiquée)
 | Mesure | Cible | Étape |
@@ -449,6 +453,7 @@ quand Node manque ; règle de permission posée par l'extension ; CI GitHub Acti
 | 2026-11-11 | j5 | §7.5 | limites de `copyAutoMemory` acceptées |
 | 2026-11-11 | j6 | §7.4 | aucun git sous le verrou du registre (code à changer) |
 | 2026-11-11 | a, b, h | ADR 0005, ADR 0001 | amendements datés |
+| 2026-11-17 | 0.6 | §10, §8.4 | interface en anglais ou en français selon la langue de VS Code ; `adviseOrphan` rend un code `reason` au lieu d'un texte ; rendu de session : `[tool_result]`, coupe `…`, plus de lien « page suivante » dans le noyau (la navigation reste celle de l'extension) |
 | 2026-11-16 | 0.5.1 | §7.4 | aide « Que faire de cet orphelin ? » : constat et conseil dans une fenêtre modale (texte entier), boutons « action conseillée » et « Autres actions… » |
 | 2026-11-16 | 0.5 | §10, §12, ADR 0007 | « Supprimer le projet… » pour un projet vivant (marqueur compris, jamais son dossier) ; double confirmation (récapitulatif puis nom du projet) pour projet et orphelin ; dossier Claude listé par une autre entrée jamais touché |
 | 2026-11-16 | 0.4 | §3, ADR 0007 | « Supprimer l'orphelin… » : sessions, dossiers Claude (auto-mémoire), topics à la corbeille, puis entrée du registre retirée (pas si un fichier n'a pas pu partir) |

@@ -10,11 +10,11 @@ A VS Code extension and Claude Code plugin (package `claude-projects-hub`, publi
 Claude Code projects and sessions on the machine and provides topic-based memory, shared across a project's sessions
 and across projects, which Claude reads and writes through an MCP server `hub` and a SessionStart hook.
 
-The interface and command titles are in French; they are quoted as-is below.
+The interface follows the VS Code display language: English, or French when VS Code is in French (French language pack). The text injected by the hook and the MCP tool descriptions, read by Claude, stay in French, as do a few error messages from the shared core.
 
 ## Project status
 
-Version 0.3.0 (extension and plugin). Non-commercial source-available license ([LICENSE.md](LICENSE.md)).
+Version 0.6.0 (extension and plugin). Non-commercial source-available license ([LICENSE.md](LICENSE.md)).
 See [CHANGELOG.md](CHANGELOG.md). Resume point: `docs/reprise.md`. Français : [README.md](README.md).
 
 ## Features
@@ -28,7 +28,7 @@ See [CHANGELOG.md](CHANGELOG.md). Resume point: `docs/reprise.md`. Français : [
   dates are in local time.
 - **Project identity**: memory follows the project when its folder is moved or renamed; orphaned Claude transcripts
   and auto-memory are reattached.
-- **VS Code views**: a "Claude Hub" container with the "Projets" and "Mémoire globale" views.
+- **VS Code views**: a "Claude Hub" container with the "Projects" and "Global memory" views.
 
 ## Requirements
 
@@ -42,13 +42,13 @@ See [CHANGELOG.md](CHANGELOG.md). Resume point: `docs/reprise.md`. Français : [
 
 1. Build the package: `npm install`, `npm run build`, then `npm run package` (produces a `.vsix`).
 2. Install the `.vsix` in VS Code: `code --install-extension <file>.vsix`.
-3. Run the command "Claude Hub: Installer l'intégration Claude". It checks Node, copies the plugin to
+3. Run the command "Claude Hub: Install the Claude integration". It checks Node, copies the plugin to
    `~/.claude-projects-hub/marketplace`, then runs `claude plugin marketplace add` and `claude plugin install`
    (plugin `projects-hub`, marketplace `projects-hub-local`).
 4. If `claude` is not on the PATH, the command shows two `/plugin …` commands to type in Claude Code instead.
-5. "Claude Hub: Retirer l'intégration" uninstalls the plugin.
+5. "Claude Hub: Remove the integration" uninstalls the plugin.
 
-After an extension update, running "Installer l'intégration Claude" again recopies the plugin.
+After an extension update, running "Install the Claude integration" again recopies the plugin.
 
 ### Permission rule
 
@@ -71,35 +71,35 @@ The extension never modifies this file.
 
 ## Commands
 
-All belong to the "Claude Hub" category. "Rattacher à un projet…", "Détacher ce dossier", "Ignorer ce candidat",
-"Ignorer l'orphelin", "Copier l'auto-mémoire", "Que faire de cet orphelin ?", "Supprimer la session…" "Supprimer l'orphelin…" and "Supprimer le projet…" exist only in the views' context menus, not in the command palette. Clicking an orphan opens "Que faire de cet orphelin ?".
+All belong to the "Claude Hub" category. "Attach to a project…", "Detach this folder", "Ignore this candidate",
+"Ignore the orphan", "Copy the auto-memory", "What to do with this orphan?", "Delete session…", "Delete the orphan…" and "Delete the project…" exist only in the views' context menus, not in the command palette. Clicking an orphan opens "What to do with this orphan?".
 
 | Command | Purpose |
 |---|---|
-| Rafraîchir | rereads projects, sessions and topics |
-| Nouveau topic | creates a project or global topic |
-| Supprimer le topic | sends the topic file to the trash |
-| Importer en topic | turns an auto-memory note into a topic |
-| Reprendre dans Claude | reopens the session in the Claude extension |
-| Reprendre dans un terminal | `claude --resume <id>` in the project folder |
-| Ouvrir le dossier | opens the project folder |
-| Rattacher à un projet… | merges an orphan, a candidate or a clone into another project; topics are moved, a clashing slug gets a suffix |
-| Détacher ce dossier | gives the folder a fresh identity; topics stay with the original project |
-| Ignorer ce candidat | rejects a proposed attachment |
-| Ignorer l'orphelin | hides the orphan; it can still be attached by hand |
-| Que faire de cet orphelin ? | opens when you click an orphan: what is known, advice and the actions, including "Indiquer son nouveau dossier…" for a moved project |
-| Annuler le dernier rattachement | undoes the automatic merges of the last scan; they are not redone on the next scan |
-| Copier l'auto-mémoire | copies Claude auto-memory to the new folder after confirmation; nothing is overwritten |
-| Supprimer le projet… | like "Supprimer l'orphelin…" for a registered project, plus its `.claude/projects-hub.json` marker file; the project folder stays; double confirmation (summary, then typing the exact name) |
-| Supprimer l'orphelin… | after confirmation, sends an orphan's sessions, Claude folder (auto-memory included) and topics to the trash, then removes it from the hub, after a double confirmation (summary, then typing the name); never with an open session |
-| Supprimer la session… | after confirmation, sends the files of the selected sessions (or of a project / orphan) to the trash; never an open session |
-| Rafraîchir les empreintes | recomputes the projects' git fingerprints |
-| Aperçu de l'injection | shows the text the hook injects for this project |
-| Installer l'intégration Claude | installs the plugin (see Installation) |
-| Retirer l'intégration | uninstalls the plugin |
-| Diagnostic | output channel: unreadable lines, unknown types, log tails |
+| Refresh | rereads projects, sessions and topics |
+| New topic | creates a project or global topic |
+| Delete topic | sends the topic file to the trash |
+| Import as topic | turns an auto-memory note into a topic |
+| Resume in Claude | reopens the session in the Claude extension |
+| Resume in a terminal | `claude --resume <id>` in the project folder |
+| Open folder | opens the project folder |
+| Attach to a project… | merges an orphan, a candidate or a clone into another project; topics are moved, a clashing slug gets a suffix |
+| Detach this folder | gives the folder a fresh identity; topics stay with the original project |
+| Ignore this candidate | rejects a proposed attachment |
+| Ignore the orphan | hides the orphan; it can still be attached by hand |
+| What to do with this orphan? | opens when you click an orphan: a dialog with what is known and the advice, then the recommended action or "Other actions…", including "Point to its new folder…" for a moved project |
+| Undo the last attachment | undoes the automatic merges of the last scan; they are not redone on the next scan |
+| Copy the auto-memory | copies Claude auto-memory to the new folder after confirmation; nothing is overwritten |
+| Delete the project… | like "Delete the orphan…" for a registered project, plus its `.claude/projects-hub.json` marker file; the project folder stays; double confirmation (summary, then typing the exact name) |
+| Delete the orphan… | after confirmation, sends an orphan's sessions, Claude folder (auto-memory included) and topics to the trash, then removes it from the hub, after a double confirmation (summary, then typing the name); never with an open session |
+| Delete session… | after confirmation, sends the files of the selected sessions (or of a project / orphan) to the trash; never an open session |
+| Refresh fingerprints | recomputes the projects' git fingerprints |
+| Injection preview | shows the text the hook injects for this project |
+| Install the Claude integration | installs the plugin (see Installation) |
+| Remove the integration | uninstalls the plugin |
+| Diagnostics | output channel: unreadable lines, unknown types, log tails |
 
-Setting: `claudeProjectsHub.showTemporaryProjects` (default `false`) shows the "Temporaires" node (sessions of
+Setting: `claudeProjectsHub.showTemporaryProjects` (default `false`) shows the "Temporary" node (sessions of
 excluded folders).
 
 ## Project marker
@@ -111,7 +111,7 @@ root.
 |---|---|
 | Local | never versioned: in a git repository, the line `/.claude/projects-hub.json` is added to `.git/info/exclude`, never to a `.gitignore` |
 | Absent | from temporary folders, the home folder, a drive root, `~/.claude` and `~/.claude-projects-hub`: only global topics are injected there |
-| Clones and worktrees | separate projects, each with its own identity, unless you merge them with "Rattacher à un projet…" |
+| Clones and worktrees | separate projects, each with its own identity, unless you merge them with "Attach to a project…" |
 | Folder copy | a copy that includes its marker shares the project's identity |
 
 ## Locations
@@ -127,7 +127,7 @@ root.
 
 - Nothing leaves the machine; no network calls.
 - **Global topics are injected into every project**: information about one client can reach another project. Put
-  nothing confidential in them. They are visible and editable in the "Mémoire globale" view.
+  nothing confidential in them. They are visible and editable in the "Global memory" view.
 - Before any topic is written, a few secret formats are refused (private keys, Anthropic keys, GitHub tokens, AWS
   keys, Slack tokens). The list is closed and does not catch everything.
 

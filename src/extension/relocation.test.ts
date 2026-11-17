@@ -7,10 +7,12 @@ import { ensureProject } from '../core/identity.ts';
 import { readRegistry, updateRegistry } from '../core/registry.ts';
 import { attachProject, reconcile } from '../core/relocate.ts';
 import { sandbox } from '../../test/fixtures/kit.ts';
+import '../../test/fixtures/l10n.ts';
 
 // QA T11 (point p): the command handlers of relocation.ts run against a stub of the `vscode` module (QuickPick, modal box, messages).
 const S: any = (globalThis as any).__vs = { cmds: new Map(), pick: undefined as any, warn: undefined as any, infos: [] as string[], errors: [] as string[], picked: [] as any[], warned: [] as any[] };
 const stub = `const S = globalThis.__vs;
+export const l10n = globalThis.__l10nFr;
 export const window = {
   showQuickPick: async (items, o) => { S.picked.push(items); return S.pick?.(items); },
   showWarningMessage: async (...a) => { S.warned.push(a); return S.warn; },

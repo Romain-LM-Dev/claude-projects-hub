@@ -7,9 +7,11 @@ import { relinkOrphan } from '../core/orphanAdvice.ts';
 import { newEntry, updateRegistry, readRegistry } from '../core/registry.ts';
 import { writeTopic } from '../core/store.ts';
 import { sandbox } from '../../test/fixtures/kit.ts';
+import '../../test/fixtures/l10n.ts';
 
 const S: any = (globalThis as any).__vsOh = { cmds: new Map(), pick: undefined as any, open: undefined as any, info: undefined as any, choose: undefined as any, modals: [] as any[], infos: [] as string[], errors: [] as string[], picked: [] as any[], calls: [] as any[], opened: 0 };
 const stub = `const S = globalThis.__vsOh;
+export const l10n = globalThis.__l10nFr;
 export const window = {
   showQuickPick: async (items, o) => { S.picked.push({ items, o }); return S.pick?.(items); },
   showOpenDialog: async () => { S.opened++; return S.open; },

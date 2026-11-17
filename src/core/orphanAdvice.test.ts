@@ -20,7 +20,8 @@ test('adviseOrphan: rules in order, first true case wins', () => {
   assert.equal(adviseOrphan({ ...base, sessions: 2, daysIdle: 61 }).action, 'deleteSessions');
   assert.equal(adviseOrphan({ ...base, sessions: 2, daysIdle: 60 }).action, 'relink');
   assert.equal(adviseOrphan({ ...base, sessions: 2 }).action, 'relink');
-  assert.ok(adviseOrphan({ ...base, sessions: 2 }).text.length > 10);
+  assert.equal(adviseOrphan({ ...base, sessions: 2 }).reason, 'recent');
+  assert.equal(adviseOrphan({ ...base, sessions: 2, topics: 1 }).reason, 'keep');
 });
 
 const mkOrphan = async (sb: ReturnType<typeof sandbox>, name: string) => {

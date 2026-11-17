@@ -2,6 +2,8 @@
 !dist/extension.js
 !claude-plugin/**
 !package.json
+!package.nls*.json
+!l10n/**
 !README.md
 !CHANGELOG.md
 !LICENSE.md

@@ -4,9 +4,11 @@ import { registerHooks } from 'node:module';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { sandbox } from '../../test/fixtures/kit.ts';
+import '../../test/fixtures/l10n.ts';
 
 const S: any = (globalThis as any).__vsd = { cmds: new Map(), warn: undefined as any, warned: [] as any[], input: undefined as any, inputs: [] as any[], infos: [] as string[], errors: [] as string[] };
 const stub = `const S = globalThis.__vsd;
+export const l10n = globalThis.__l10nFr;
 export const Uri = { file: (p) => ({ fsPath: p }) };
 export const workspace = { fs: { delete: async () => { throw new Error('real trash must not be used'); } } };
 export const window = {

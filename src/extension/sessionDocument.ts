@@ -11,7 +11,7 @@ export interface SessionRef { claudeDir: string; sessionId: string; agentId?: st
 export function parseSessionUri(path: string, query: string): SessionRef {
   const parts = path.replace(/^\//, "").replace(/\.md$/, "").split("/");
   const ok = (parts.length === 2 || (parts.length === 4 && parts[2] === "subagents")) && parts.every((p) => SEG.test(p) && p !== "..");
-  if (!ok) throw new Error(`URI de session invalide : ${path}`);
+  if (!ok) throw new Error(vscode.l10n.t("Invalid session URI: {0}", path));
   const page = Math.max(1, Number(new URLSearchParams(query).get("page")) || 1);
   return { claudeDir: parts[0]!, sessionId: parts[1]!, agentId: parts[3], page };
 }
@@ -32,10 +32,10 @@ export class SessionDocuments implements vscode.TextDocumentContentProvider, vsc
       const t0 = Date.now();
       const { markdown, hasNext } = await renderSessionPage(file, r.page);
       this.log(`document ${r.sessionId}${r.agentId ? "/" + r.agentId : ""} page ${r.page} : ${Date.now() - t0} ms`);
-      const nav = [r.page > 1 && `[← page précédente](${uriOf(r, r.page - 1)})`, hasNext && `[page suivante →](${uriOf(r, r.page + 1)})`].filter(Boolean).join(" · ");
-      return `# Session ${r.sessionId} - page ${r.page}\n\n${nav}\n\n${markdown}\n\n${nav}\n`;
+      const nav = [r.page > 1 && `[${vscode.l10n.t("← previous page")}](${uriOf(r, r.page - 1)})`, hasNext && `[${vscode.l10n.t("next page →")}](${uriOf(r, r.page + 1)})`].filter(Boolean).join(" · ");
+      return `# ${vscode.l10n.t("Session {0} - page {1}", r.sessionId, r.page)}\n\n${nav}\n\n${markdown}\n\n${nav}\n`;
     } catch (e) {
-      return `Erreur : ${(e as Error).message}\n`;
+      return vscode.l10n.t("Error: {0}", (e as Error).message) + "\n";
     }
   }
 

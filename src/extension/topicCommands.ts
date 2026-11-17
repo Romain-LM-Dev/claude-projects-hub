@@ -9,17 +9,17 @@ const projectIdOf = (n?: Node) => (n?.kind === "memory" || n?.kind === "project"
 
 /** Prompts for the missing fields; undefined = cancelled. */
 async function ask(preset?: Partial<TopicPreset>, slugHint = ""): Promise<TopicPreset | undefined> {
-  const slug = preset?.slug ?? await vscode.window.showInputBox({ title: "Identifiant du topic", value: slugHint, validateInput: (v) => (isValidSlug(v) ? undefined : "minuscules, chiffres et tirets") });
+  const slug = preset?.slug ?? await vscode.window.showInputBox({ title: vscode.l10n.t("Topic id"), value: slugHint, validateInput: (v) => (isValidSlug(v) ? undefined : vscode.l10n.t("lowercase letters, digits and hyphens")) });
   if (!slug) return;
-  const title = preset?.title ?? await vscode.window.showInputBox({ title: "Titre", value: slug });
+  const title = preset?.title ?? await vscode.window.showInputBox({ title: vscode.l10n.t("Title"), value: slug });
   if (!title) return;
-  const summary = preset?.summary ?? await vscode.window.showInputBox({ title: "Résumé (une ligne)", value: title });
+  const summary = preset?.summary ?? await vscode.window.showInputBox({ title: vscode.l10n.t("Summary (one line)"), value: title });
   if (!summary) return;
   return { slug, title, summary };
 }
 
 export function registerTopicCommands(hub: Hub, refresh: () => void): vscode.Disposable[] {
-  const fail = (e: unknown) => void vscode.window.showErrorMessage(`Claude Hub : ${(e as Error).message}`);
+  const fail = (e: unknown) => void vscode.window.showErrorMessage(vscode.l10n.t("Claude Hub: {0}", (e as Error).message));
   return [
     // Palette or global view: global topic; project or Mémoire node: topic of that project. `preset` skips the prompts (tests).
     vscode.commands.registerCommand("claudeProjectsHub.newTopic", async (n?: Node, preset?: TopicPreset) => {
@@ -36,8 +36,9 @@ export function registerTopicCommands(hub: Hub, refresh: () => void): vscode.Dis
     }),
     vscode.commands.registerCommand("claudeProjectsHub.deleteTopic", async (n?: Node) => {
       if (n?.kind !== "topic") return;
-      const ok = await vscode.window.showWarningMessage(`Supprimer le topic ${n.entry.ref} ?`, { modal: true }, "Supprimer");
-      if (ok !== "Supprimer") return;
+      const del = vscode.l10n.t("Delete");
+      const ok = await vscode.window.showWarningMessage(vscode.l10n.t("Delete topic {0}?", n.entry.ref), { modal: true }, del);
+      if (ok !== del) return;
       try {
         await vscode.workspace.fs.delete(topicUri(hub, n.entry.ref, n.projectId), { useTrash: true });
       } catch (e) { fail(e); }
@@ -47,8 +48,8 @@ export function registerTopicCommands(hub: Hub, refresh: () => void): vscode.Dis
       if (n?.kind !== "note") return;
       try {
         const pick = await vscode.window.showQuickPick(
-          [...(n.p.id ? [{ label: "Topic du projet", scope: "project" as Scope }] : []), { label: "Topic global", scope: "global" as Scope }],
-          { title: "Importer en topic" },
+          [...(n.p.id ? [{ label: vscode.l10n.t("Project topic"), scope: "project" as Scope }] : []), { label: vscode.l10n.t("Global topic"), scope: "global" as Scope }],
+          { title: vscode.l10n.t("Import as topic") },
         );
         if (!pick) return;
         const name = n.note.name ?? "";

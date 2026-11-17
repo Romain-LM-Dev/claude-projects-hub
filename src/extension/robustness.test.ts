@@ -4,10 +4,12 @@ import { registerHooks } from 'node:module';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { sandbox } from '../../test/fixtures/kit.ts';
+import '../../test/fixtures/l10n.ts';
 
 // Hub.get() with an unreadable registry, and the session id check of resume.ts, against a stub of `vscode`.
 const S: any = (globalThis as any).__vs2 = { cmds: new Map(), errors: [] as string[], opened: [] as string[], sent: [] as string[] };
 const stub = `const S = globalThis.__vs2;
+export const l10n = globalThis.__l10nFr;
 export const window = { showErrorMessage: async (m) => { S.errors.push(m); }, createTerminal: () => ({ show() {}, sendText: (t) => S.sent.push(t) }) };
 export const commands = { registerCommand: (id, fn) => { S.cmds.set(id, fn); return { dispose() {} }; } };
 export const env = { openExternal: async (u) => { S.opened.push(u); } };

@@ -11,13 +11,16 @@ export interface OrphanFacts { candidate?: string; sessions: number; topics: num
 
 export const IDLE_DAYS = 60;
 
+/** Why the advice was given; the extension turns it into localized text. */
+export type AdviceReason = 'candidate' | 'empty' | 'keep' | 'idle' | 'recent';
+
 /** §7.4 "Aide": first true case wins. */
-export function adviseOrphan(f: OrphanFacts): { action: OrphanAction; text: string } {
-  if (f.candidate) return { action: 'attachCandidate', text: `Un projet vivant (${f.candidate}) lui ressemble : rattachez-le pour retrouver sessions et mémoire au même endroit.` };
-  if (!f.sessions && !f.topics && !f.notes) return { action: 'dismiss', text: 'Aucune session, aucun topic, aucune note : il ne contient rien à garder, ignorez-le.' };
-  if (f.topics || f.notes) return { action: 'relink', text: 'Il porte des topics ou des notes d\'auto-mémoire : ne supprimez rien ; indiquez son nouveau dossier ou rattachez-le à un projet existant.' };
-  if (f.daysIdle !== undefined && f.daysIdle > IDLE_DAYS) return { action: 'deleteSessions', text: `Inactif depuis plus de ${IDLE_DAYS} jours et sans topic ni note : ses sessions peuvent aller à la corbeille.` };
-  return { action: 'relink', text: 'Récent et sans topic : si le dossier a été déplacé, indiquez son nouveau dossier ; sinon ignorez l\'orphelin.' };
+export function adviseOrphan(f: OrphanFacts): { action: OrphanAction; reason: AdviceReason } {
+  if (f.candidate) return { action: 'attachCandidate', reason: 'candidate' };
+  if (!f.sessions && !f.topics && !f.notes) return { action: 'dismiss', reason: 'empty' };
+  if (f.topics || f.notes) return { action: 'relink', reason: 'keep' };
+  if (f.daysIdle !== undefined && f.daysIdle > IDLE_DAYS) return { action: 'deleteSessions', reason: 'idle' };
+  return { action: 'relink', reason: 'recent' };
 }
 
 /** §7.4 « Indiquer son nouveau dossier… ». */

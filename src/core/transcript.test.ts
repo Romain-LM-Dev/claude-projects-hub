@@ -15,13 +15,13 @@ test('rendu : texte clôturé (clôture plus longue que les backticks), thinking
   assert.ok(!markdown.includes('secret'));
 });
 
-test('pagination : pages de N entrées et lien page suivante', async () => {
+test('pagination : pages de N entrées et hasNext (la navigation est ajoutée par l\'extension)', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'hub-pg-'));
   const f = join(dir, 's.jsonl');
   const lines = Array.from({ length: 5 }, (_, i) => JSON.stringify({ type: 'user', message: { role: 'user', content: `m${i}` } }));
   writeFileSync(f, lines.join('\n') + '\n');
   const p1 = await renderSessionPage(f, 1, 2);
-  assert.ok(p1.hasNext && p1.markdown.includes('m1') && !p1.markdown.includes('m2') && p1.markdown.includes('?page=2'));
+  assert.ok(p1.hasNext && p1.markdown.includes('m1') && !p1.markdown.includes('m2'));
   const p3 = await renderSessionPage(f, 3, 2);
   assert.ok(!p3.hasNext && p3.markdown.includes('m4'));
 });

@@ -13,14 +13,14 @@ export function registerResume(): vscode.Disposable[] {
     vscode.commands.registerCommand("claudeProjectsHub.resumeInTerminal", (n?: Node) => {
       if (n?.kind !== "session" || !ID.test(n.s.sessionId)) return;
       const cwd = n.p.info.cwd;
-      if (!existsSync(cwd)) return void vscode.window.showErrorMessage(`Dossier introuvable : ${cwd}`);
+      if (!existsSync(cwd)) return void vscode.window.showErrorMessage(vscode.l10n.t("Folder not found: {0}", cwd));
       const t = vscode.window.createTerminal({ name: "Claude", cwd });
       t.show();
       t.sendText(`claude --resume ${n.s.sessionId}`);
     }),
     vscode.commands.registerCommand("claudeProjectsHub.openFolder", async (n?: Node) => {
       if (n?.kind !== "project") return;
-      if (!existsSync(n.p.info.cwd)) return void vscode.window.showErrorMessage(`Dossier introuvable : ${n.p.info.cwd}`);
+      if (!existsSync(n.p.info.cwd)) return void vscode.window.showErrorMessage(vscode.l10n.t("Folder not found: {0}", n.p.info.cwd));
       await vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.file(n.p.info.cwd), { forceNewWindow: true });
     }),
   ];

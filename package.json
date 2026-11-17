@@ -1,8 +1,8 @@
 {
   "name": "claude-projects-hub",
   "displayName": "Projects Hub for Claude Code",
-  "description": "Hub de projets et de topics pour Claude Code.",
-  "version": "0.5.1",
+  "description": "%description%",
+  "version": "0.6.0",
   "publisher": "romain-lm-dev",
   "license": "SEE LICENSE IN LICENSE.md",
   "private": true,
@@ -14,6 +14,7 @@
     "vscode": "^1.100.0"
   },
   "main": "./dist/extension.js",
+  "l10n": "./l10n",
   "activationEvents": [
     "onStartupFinished"
   ],
@@ -31,125 +32,125 @@
       "claudeHub": [
         {
           "id": "claudeProjectsHub.projects",
-          "name": "Projets"
+          "name": "%view.projects%"
         },
         {
           "id": "claudeProjectsHub.globalMemory",
-          "name": "Mémoire globale"
+          "name": "%view.globalMemory%"
         }
       ]
     },
     "commands": [
       {
         "command": "claudeProjectsHub.refresh",
-        "title": "Rafraîchir",
+        "title": "%command.refresh%",
         "category": "Claude Hub",
         "icon": "$(refresh)"
       },
       {
         "command": "claudeProjectsHub.newTopic",
-        "title": "Nouveau topic",
+        "title": "%command.newTopic%",
         "category": "Claude Hub",
         "icon": "$(add)"
       },
       {
         "command": "claudeProjectsHub.deleteTopic",
-        "title": "Supprimer le topic",
+        "title": "%command.deleteTopic%",
         "category": "Claude Hub"
       },
       {
         "command": "claudeProjectsHub.importTopic",
-        "title": "Importer en topic",
+        "title": "%command.importTopic%",
         "category": "Claude Hub"
       },
       {
         "command": "claudeProjectsHub.resumeInClaude",
-        "title": "Reprendre dans Claude",
+        "title": "%command.resumeInClaude%",
         "category": "Claude Hub"
       },
       {
         "command": "claudeProjectsHub.resumeInTerminal",
-        "title": "Reprendre dans un terminal",
+        "title": "%command.resumeInTerminal%",
         "category": "Claude Hub"
       },
       {
         "command": "claudeProjectsHub.openFolder",
-        "title": "Ouvrir le dossier",
+        "title": "%command.openFolder%",
         "category": "Claude Hub"
       },
       {
         "command": "claudeProjectsHub.diagnostics",
-        "title": "Diagnostic",
+        "title": "%command.diagnostics%",
         "category": "Claude Hub"
       },
       {
         "command": "claudeProjectsHub.attachProject",
-        "title": "Rattacher à un projet…",
+        "title": "%command.attachProject%",
         "category": "Claude Hub"
       },
       {
         "command": "claudeProjectsHub.detachDir",
-        "title": "Détacher ce dossier",
+        "title": "%command.detachDir%",
         "category": "Claude Hub"
       },
       {
         "command": "claudeProjectsHub.dismissCandidate",
-        "title": "Ignorer ce candidat",
+        "title": "%command.dismissCandidate%",
         "category": "Claude Hub"
       },
       {
         "command": "claudeProjectsHub.dismissOrphan",
-        "title": "Ignorer l'orphelin",
+        "title": "%command.dismissOrphan%",
         "category": "Claude Hub"
       },
       {
         "command": "claudeProjectsHub.orphanHelp",
-        "title": "Que faire de cet orphelin ?",
+        "title": "%command.orphanHelp%",
         "category": "Claude Hub"
       },
       {
         "command": "claudeProjectsHub.undoMerge",
-        "title": "Annuler le dernier rattachement",
+        "title": "%command.undoMerge%",
         "category": "Claude Hub"
       },
       {
         "command": "claudeProjectsHub.copyAutoMemory",
-        "title": "Copier l'auto-mémoire",
+        "title": "%command.copyAutoMemory%",
         "category": "Claude Hub"
       },
       {
         "command": "claudeProjectsHub.deleteSessions",
-        "title": "Supprimer la session…",
+        "title": "%command.deleteSessions%",
         "category": "Claude Hub"
       },
       {
         "command": "claudeProjectsHub.deleteOrphan",
-        "title": "Supprimer l'orphelin…",
+        "title": "%command.deleteOrphan%",
         "category": "Claude Hub"
       },
       {
         "command": "claudeProjectsHub.deleteProject",
-        "title": "Supprimer le projet…",
+        "title": "%command.deleteProject%",
         "category": "Claude Hub"
       },
       {
         "command": "claudeProjectsHub.refreshFingerprints",
-        "title": "Rafraîchir les empreintes",
+        "title": "%command.refreshFingerprints%",
         "category": "Claude Hub"
       },
       {
         "command": "claudeProjectsHub.previewInjection",
-        "title": "Aperçu de l'injection",
+        "title": "%command.previewInjection%",
         "category": "Claude Hub"
       },
       {
         "command": "claudeProjectsHub.installIntegration",
-        "title": "Installer l'intégration Claude",
+        "title": "%command.installIntegration%",
         "category": "Claude Hub"
       },
       {
         "command": "claudeProjectsHub.removeIntegration",
-        "title": "Retirer l'intégration",
+        "title": "%command.removeIntegration%",
         "category": "Claude Hub"
       }
     ],
@@ -159,7 +160,7 @@
         "claudeProjectsHub.showTemporaryProjects": {
           "type": "boolean",
           "default": false,
-          "description": "Afficher le nœud « Temporaires » (sessions des dossiers exclus)."
+          "description": "%config.showTemporaryProjects%"
         }
       }
     },

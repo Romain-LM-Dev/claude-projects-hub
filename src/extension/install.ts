@@ -41,8 +41,8 @@ export async function installIntegration(ctx: vscode.ExtensionContext, hubHome: 
   const say = (m: string, error = false) => { if (!o.silent) void (error ? vscode.window.showErrorMessage(m) : vscode.window.showInformationMessage(m)); };
   try {
     const v = (await exec("node", ["--version"])).stdout.trim();
-    if (Number(/^v?(\d+)/.exec(v)?.[1]) < 20) { say(`Node ${v} détecté : Node 20 ou plus est requis par le hook et le serveur MCP.`, true); return "node-old"; }
-  } catch { say("Node 20 ou plus est requis (`node --version` a échoué).", true); return "node-old"; }
+    if (Number(/^v?(\d+)/.exec(v)?.[1]) < 20) { say(vscode.l10n.t("Node {0} found: the hook and the MCP server need Node 20 or later.", v), true); return "node-old"; }
+  } catch { say(vscode.l10n.t("Node 20 or later is required (`node --version` failed)."), true); return "node-old"; }
 
   const dest = copyPlugin(ctx, hubHome);
   try {
@@ -50,14 +50,14 @@ export async function installIntegration(ctx: vscode.ExtensionContext, hubHome: 
     await run(exec, ["plugin", "install", PLUGIN, "--json"]);
   } catch (e) {
     if (missing(e)) {
-      say(`Claude Code (\`claude\`) est introuvable. Dans Claude Code, tape :\n/plugin marketplace add ${dest}\n/plugin install ${PLUGIN}`, true);
+      say(vscode.l10n.t("Claude Code (`claude`) was not found. In Claude Code, type:\n/plugin marketplace add {0}\n/plugin install {1}", dest, PLUGIN), true);
       return "no-claude";
     }
-    say(`Installation échouée : ${text(e).slice(0, 300)}`, true);
+    say(vscode.l10n.t("Install failed: {0}", text(e).slice(0, 300)), true);
     return "failed";
   }
   await ctx.globalState.update(KEY, ctx.extension.packageJSON.version);
-  say("Intégration Claude installée. Redémarre les sessions Claude ouvertes.");
+  say(vscode.l10n.t("Claude integration installed. Restart open Claude sessions."));
   return "installed";
 }
 
@@ -71,12 +71,12 @@ export async function removeIntegration(ctx: vscode.ExtensionContext, o: Install
   try {
     await (o.exec ?? realExec)("claude", ["plugin", "uninstall", PLUGIN, "--json"]);
   } catch (e) {
-    if (missing(e)) { say(`Claude Code (\`claude\`) est introuvable. Dans Claude Code, tape :\n/plugin uninstall ${PLUGIN}`, true); return "no-claude"; }
-    say(`Retrait échoué : ${text(e).slice(0, 300)}`, true);
+    if (missing(e)) { say(vscode.l10n.t("Claude Code (`claude`) was not found. In Claude Code, type:\n/plugin uninstall {0}", PLUGIN), true); return "no-claude"; }
+    say(vscode.l10n.t("Removal failed: {0}", text(e).slice(0, 300)), true);
     return "failed";
   }
   await ctx.globalState.update(KEY, undefined);
-  say("Intégration Claude retirée.");
+  say(vscode.l10n.t("Claude integration removed."));
   return "removed";
 }
 
@@ -89,7 +89,7 @@ export function registerInstall(ctx: vscode.ExtensionContext, hubHome: string): 
       try { copyPlugin(ctx, hubHome); void ctx.globalState.update(KEY, version); } catch { /* best effort */ }
     } else if (!done && !ctx.globalState.get(ASKED)) {
       void ctx.globalState.update(ASKED, true);
-      void vscode.window.showInformationMessage("Installer l'intégration Claude (hook et serveur MCP du hub) ?", "Installer").then((c) => {
+      void vscode.window.showInformationMessage(vscode.l10n.t("Install the Claude integration (hub hook and MCP server)?"), vscode.l10n.t("Install")).then((c) => {
         if (c) return installIntegration(ctx, hubHome);
       });
     }

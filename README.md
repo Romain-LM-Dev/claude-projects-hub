@@ -12,7 +12,7 @@ projet et entre les projets, que Claude lit et écrit par un serveur MCP `hub` e
 
 ## État du projet
 
-Version 0.3.0 (extension et plugin). Licence source-available non commerciale ([LICENSE.md](LICENSE.md)). Voir
+Version 0.6.0 (extension et plugin). Licence source-available non commerciale ([LICENSE.md](LICENSE.md)). Voir
 [CHANGELOG.md](CHANGELOG.md). Point de reprise : `docs/reprise.md`. English: [README.en.md](README.en.md).
 
 ## Fonctionnalités
@@ -27,6 +27,9 @@ Version 0.3.0 (extension et plugin). Licence source-available non commerciale ([
 - **Identité de projet** : la mémoire suit le projet quand son dossier est déplacé ou renommé ; les transcripts et
   l'auto-mémoire Claude orphelins sont rattachés.
 - **Vues VS Code** : conteneur « Claude Hub » avec les vues « Projets » et « Mémoire globale ».
+- **Langue** : l'interface suit la langue d'affichage de VS Code : français si VS Code est en français (pack de
+  langue français), anglais sinon. Le texte injecté par le hook, les descriptions des outils MCP (lus par Claude) et
+  quelques messages d'erreur du noyau restent en français.
 
 ## Prérequis
 
@@ -87,7 +90,7 @@ palette de commandes. Un clic sur un orphelin ouvre « Que faire de cet orphelin
 | Détacher ce dossier | donne au dossier une identité neuve ; les topics restent au projet d'origine |
 | Ignorer ce candidat | refuse un rattachement proposé |
 | Ignorer l'orphelin | masque l'orphelin ; il reste rattachable à la main |
-| Que faire de cet orphelin ? | s'ouvre d'un clic sur un orphelin : ce que l'on sait, un conseil et les actions, dont « Indiquer son nouveau dossier… » pour un projet déplacé |
+| Que faire de cet orphelin ? | s'ouvre d'un clic sur un orphelin : fenêtre de ce que l'on sait et du conseil, puis l'action conseillée ou « Autres actions… », dont « Indiquer son nouveau dossier… » pour un projet déplacé |
 | Annuler le dernier rattachement | défait les fusions automatiques du dernier scan ; elles ne sont pas refaites au scan suivant |
 | Copier l'auto-mémoire | copie, après confirmation, l'auto-mémoire Claude vers le nouveau dossier ; rien n'est écrasé |
 | Supprimer le projet… | comme « Supprimer l'orphelin… » pour un projet enregistré, plus son fichier marqueur `.claude/projects-hub.json` ; le dossier du projet reste ; double confirmation (récapitulatif, puis saisie du nom exact) |

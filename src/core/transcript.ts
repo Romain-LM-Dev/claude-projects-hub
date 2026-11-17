@@ -184,7 +184,8 @@ function fence(text: string): string {
   const f = '`'.repeat(longest + 1);
   return `${f}text\n${text}\n${f}`;
 }
-const cut = (s: string, n: number) => (s.length > n ? `${s.slice(0, n)}… [coupé]` : s);
+// Markers stay language-neutral (raw API names, like the `### user` headings): the extension localizes the rest.
+const cut = (s: string, n: number) => (s.length > n ? `${s.slice(0, n)}…` : s);
 
 function renderEntry(o: Obj): string | undefined {
   if (o.type !== 'user' && o.type !== 'assistant') return undefined;
@@ -197,7 +198,7 @@ function renderEntry(o: Obj): string | undefined {
     else if (b?.type === 'tool_result') {
       const r = b.content;
       const t = typeof r === 'string' ? r : Array.isArray(r) ? r.map((x) => str((x as Obj)?.text) ?? '').join('\n') : '';
-      parts.push(fence(`[résultat] ${cut(t, TOOL_RESULT_MAX)}`));
+      parts.push(fence(`[tool_result] ${cut(t, TOOL_RESULT_MAX)}`));
     } // thinking, attachment et blocs inconnus : omis
   }
   return parts.length ? `### ${o.type}\n\n${parts.join('\n\n')}` : undefined;
@@ -230,6 +231,5 @@ export async function renderSessionPage(file: string, page: number, pageSize = P
   } finally {
     rl.close();
   }
-  if (hasNext) out.push(`[page suivante](?page=${page + 1})`);
   return { markdown: out.join('\n\n'), page, hasNext };
 }
